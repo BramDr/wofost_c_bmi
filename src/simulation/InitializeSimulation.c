@@ -1,0 +1,27 @@
+#include "simulation.h"
+#include "time_utils.h"
+
+void InitializeSimulation(const char *config_file) {
+
+  Configuration = malloc(sizeof(Config));
+
+  ReadConfiguration(config_file, Configuration);
+  Start = Configuration->Start;
+  End = Configuration->End;
+  Standalone = Configuration->standalone;
+
+  InitializeDomainUnits();
+  InitializeSimulationUnits();
+
+  if (Standalone)
+    InitializeMeteo();
+
+  InitializeOutput();
+
+  free(Configuration->crop_configurations);
+  free(Configuration);
+  Configuration = NULL;
+
+  CurrentTime = timegm_portable(&Start);
+  CurrentStep = 0;
+}

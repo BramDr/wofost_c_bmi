@@ -1,0 +1,8 @@
+name: wofost_bmi
+channels:
+  - conda-forge
+dependencies:
+  - gcc_linux-64
+  - libnetcdf
+  - bmi-c
+  - make
