@@ -10,6 +10,6 @@ extern float CosLD;
 extern float DiffRadPP;
 extern float DSinBE;
 
-extern int Astro();
+extern int Astro(void);
 
 #endif // ASTRO_H

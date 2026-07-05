@@ -6,7 +6,7 @@
 /*  function LeaveAreaIndex()                                             */
 /*  Purpose: Calculation of the LAI of the LeaveProperties ha ha-1 struct */
 /* -----------------------------------------------------------------------*/
-float LeaveAreaIndex()
+float LeaveAreaIndex(void)
 {
     float LAISum = 0.;
     Green *LeaveProperties;

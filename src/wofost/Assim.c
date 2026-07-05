@@ -73,7 +73,7 @@ float InstantAssimilation(float KDiffuse, float EFF, float AssimMax, float SinB,
 /*  Purpose: Calculation of the daily assimilation rate using the three point  */
 /*  Gaussian integration method.                                               */
 /*-----------------------------------------------------------------------------*/
-float DailyTotalAssimilation()
+float DailyTotalAssimilation(void)
 {
     int i;
     float KDiffuse, EFF, Factor;

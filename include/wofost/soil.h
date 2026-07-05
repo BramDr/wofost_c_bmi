@@ -7,12 +7,6 @@
 #define NR_VARIABLES_SOIL_USED 6
 #define NR_TABLES_SOIL 2
 
-char *SoilParam[] = {"SMW",   "SMFCF",  "SM0",   "CRAIRC", "K0",
-                     "SOPE",  "KSUB",   "SPADS", "SPODS",  "SPASS",
-                     "SPOSS", "DEFLIM", "NULL"};
-
-char *SoilParam2[] = {"SMTAB", "CONTAB", "NULL"};
-
 typedef struct CONSTANTS {
   float MaxEvapWater;
   float MoistureFC;
@@ -74,7 +68,7 @@ typedef struct SOIL {
 
 extern Soil *WatBal;
 
-extern void GetSoilData();
-extern int FillSoilVariables();
+extern void GetSoilData(Soil *SOIL, char *soilfile);
+extern void FillSoilVariables(Soil *SOIL, float *Variable);
 
 #endif // SOIL_H

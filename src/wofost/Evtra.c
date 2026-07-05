@@ -23,7 +23,7 @@
 /*    Original fortran version: D.M. Jansen and C.A. van Diepen,  */
 /*    October 1986.                                               */
 /* ---------------------------------------------------------------*/
-float sweaf()
+static float sweaf(void)
 {
     float sweaf;
     sweaf = 1. / (0.76 + 1.5 * Penman.ET0) - (5. - Crop->prm.CropGroupNumber) * 0.10;
@@ -39,7 +39,7 @@ float sweaf()
 /*  function EvapTra()                                              */
 /*  Purpose: Calculates the water stress and the transpiration rate */
 /* -----------------------------------------------------------------*/
-void EvapTra()
+void EvapTra(void)
 {
     float CriticalSoilMoisture;
     float KDiffuse;

@@ -38,51 +38,53 @@ extern float Temp;
 extern float DayTemp;
 
 /* General help functions */
-extern void RatesToZero();
-extern void IfSowing();
+extern void RatesToZero(void);
+extern void IfSowing(const int start);
+extern void Clean(void);
+extern void CopySimUnit(const SimUnit *from, SimUnit *to);
 
 /* Crop growth */
-extern void Partioning();
-extern void HeatStress();
-extern void RateCalculationCrop();
+extern void Partioning(void);
+extern void HeatStress(void);
+extern void RateCalculationCrop(void);
 extern void Growth(float NewPlantMaterial);
-extern void IntegrationCrop();
-extern void InitializeCrop();
+extern void IntegrationCrop(void);
+extern void InitializeCrop(void);
 extern int EmergenceCrop(int Emergence);
 
-extern void DevelopmentRate();
-extern void LeaveGrowth();
-extern float DailyTotalAssimilation();
-extern float DyingLeaves();
+extern void DevelopmentRate(void);
+extern void LeaveGrowth(void);
+extern float DailyTotalAssimilation(void);
+extern float DyingLeaves(void);
 extern float InstantAssimilation(float KDiffuse, float EFF, float AssimMax,
                                  float SinB, float PARDiffuse, float PARDirect);
-extern float LeaveAreaIndex();
+extern float LeaveAreaIndex(void);
 extern float Correct(float GrossAssimilation);
 extern float RespirationRef(float TotalAssimilation);
 extern float Conversion(float NetAssimilation);
 
 /* Nutrients */
-extern void CropNutrientRates();
-extern void InitializeNutrients();
-extern void IntegrationNutrients();
-extern void NutritionINDX();
-extern void NutrientLoss();
-extern void NutrientMax();
-extern void NutrientPartioning();
-extern void NutrientRates();
-extern void NutrientOptimum();
-extern void NutrientDemand();
-extern void SoilNutrientRates();
-extern void NutrientTranslocation();
-extern void RateCalcultionNutrients();
+extern void CropNutrientRates(void);
+extern void InitializeNutrients(void);
+extern void IntegrationNutrients(void);
+extern void NutritionINDX(void);
+extern void NutrientLoss(void);
+extern void NutrientMax(void);
+extern void NutrientPartioning(void);
+extern void NutrientRates(void);
+extern void NutrientOptimum(void);
+extern void NutrientDemand(void);
+extern void SoilNutrientRates(void);
+extern void NutrientTranslocation(void);
+extern void RateCalcultionNutrients(void);
 
 /* Water balance */
-extern void InitializeWatBal();
-extern void RateCalulationWatBal();
-extern void IntegrationWatBal();
-extern void EvapTra();
+extern void InitializeWatBal(void);
+extern void RateCalulationWatBal(void);
+extern void IntegrationWatBal(void);
+extern void EvapTra(void);
 
 /* Wofost */
-extern void UpdateWofost();
+extern void UpdateWofost(void);
 
 #endif // WOFOST_H

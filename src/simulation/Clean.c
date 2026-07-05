@@ -7,7 +7,7 @@
 /*  Purpose: free all the allocated memory and set nodes to NULL  */
 /* ---------------------------------------------------------------*/
 
-void Clean()
+void Clean(void)
 {
     Green *LeaveProperties;
     TABLE *head;

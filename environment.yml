@@ -6,3 +6,4 @@ dependencies:
   - libnetcdf
   - bmi-c
   - make
+  - cmake

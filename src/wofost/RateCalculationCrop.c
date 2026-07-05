@@ -12,7 +12,7 @@
 /*  plant organs (kg ha-1 d-1).                                               */
 /* ---------------------------------------------------------------------------*/
 
-void RateCalculationCrop() {
+void RateCalculationCrop(void) {
   float TotalAssimilation;
   float Maintenance;
   float GrossAssimilation;

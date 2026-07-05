@@ -39,7 +39,7 @@ int EmergenceCrop(int Emergence)
 /*  Purpose: Set the initial crop state and leave variables  */
 /*  ---------------------------------------------------------*/
 
-void InitializeCrop()
+void InitializeCrop(void)
 {
     float FractionRoots;
     float FractionShoots;

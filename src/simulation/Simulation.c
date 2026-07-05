@@ -1,6 +1,7 @@
 #include "simulation.h"
 #include <assert.h>
 #include <netcdf.h>
+#include <string.h>
 
 static void
 InitializeSimulationMeta(const NetCDFConfig *config, const size_t domain_size,
@@ -53,7 +54,7 @@ InitializeSimulationMeta(const NetCDFConfig *config, const size_t domain_size,
 static void
 InitializeSimulationMetas(const Config *config, const size_t domain_size,
                           const size_t domain_shape[NR_DOMAIN_DIMENSIONS],
-                          size_t crop_size, size_t **active_size,
+                          const size_t crop_size, size_t **active_size,
                           size_t ***active_index) {
   *active_size = malloc(crop_size * sizeof(**active_size));
   if (*active_size == NULL)
@@ -72,10 +73,9 @@ InitializeSimulationMetas(const Config *config, const size_t domain_size,
 
 static void InitializeSimulationData(const Config *config,
                                      const size_t crop_size,
-                                     const size_t active_size[],
-                                     const size_t *active_index[],
-                                     const DomUnit domain_grid[],
-                                     SimUnit ***grid) {
+                                     const size_t *active_size,
+                                     const size_t **active_index,
+                                     DomUnit *domain_grid, SimUnit ***grid) {
   *grid = malloc(crop_size * sizeof(**grid));
   if (*grid == NULL)
     ERR(printf("Could not allocate memory for Grid."));
@@ -97,7 +97,7 @@ static void InitializeSimulationData(const Config *config,
 
     for (size_t j = 0; j < active_size[i]; j++) {
       SimUnit *unit = &(*grid)[i][j];
-      copy_simunit(&template, unit);
+      CopySimUnit(&template, unit);
 
       size_t index = active_index[i][j];
       DomUnit *dom_unit = &domain_grid[index];
@@ -109,7 +109,7 @@ static void InitializeSimulationData(const Config *config,
 static void ReadSimulationPlantDateData(
     const NetCDFConfig *config, const size_t domain_size,
     const size_t domain_shape[NR_DOMAIN_DIMENSIONS], const size_t active_size,
-    const size_t active_index[], SimUnit grid[]) {
+    const size_t *active_index, SimUnit *grid) {
   int status, ncid, varid;
 
   if ((status = nc_open(config->file_path, NC_NOWRITE, &ncid)) != NC_NOERR)
@@ -146,8 +146,8 @@ static void ReadSimulationPlantDateData(
 static void
 ReadSimulationTsum1Data(const NetCDFConfig *config, const size_t domain_size,
                         const size_t domain_shape[NR_DOMAIN_DIMENSIONS],
-                        const size_t active_size, const size_t active_index[],
-                        SimUnit grid[]) {
+                        const size_t active_size, const size_t *active_index,
+                        SimUnit *grid) {
   int status, ncid, varid;
 
   if ((status = nc_open(config->file_path, NC_NOWRITE, &ncid)) != NC_NOERR)
@@ -183,8 +183,8 @@ ReadSimulationTsum1Data(const NetCDFConfig *config, const size_t domain_size,
 static void
 ReadSimulationTsum2Data(const NetCDFConfig *config, const size_t domain_size,
                         const size_t domain_shape[NR_DOMAIN_DIMENSIONS],
-                        const size_t active_size, const size_t active_index[],
-                        SimUnit grid[]) {
+                        const size_t active_size, const size_t *active_index,
+                        SimUnit *grid) {
   int status, ncid, varid;
 
   if ((status = nc_open(config->file_path, NC_NOWRITE, &ncid)) != NC_NOERR)
@@ -220,8 +220,8 @@ ReadSimulationTsum2Data(const NetCDFConfig *config, const size_t domain_size,
 static void
 ReadSimulationSpatialData(const Config *config, const size_t domain_size,
                           const size_t domain_shape[NR_DOMAIN_DIMENSIONS],
-                          const size_t crop_size, const size_t active_size[],
-                          const size_t *active_index[], SimUnit *grid[]) {
+                          const size_t crop_size, const size_t *active_size,
+                          const size_t **active_index, SimUnit **grid) {
   for (size_t i = 0; i < crop_size; i++) {
     CropConfig *crop_config = &config->crop_configurations[i];
 
@@ -241,20 +241,20 @@ ReadSimulationSpatialData(const Config *config, const size_t domain_size,
   }
 }
 
-void InitializeSimulationUnits() {
+void InitializeSimulationUnits(void) {
   CropSize = Configuration->CropSize;
 
   InitializeSimulationMetas(Configuration, DomainSize, DomainShape, CropSize,
                             &ActiveSize, &ActiveIndex);
 
-  InitializeSimulationData(Configuration, CropSize, ActiveSize, ActiveIndex,
-                           DomGrid, &SimGrid);
+  InitializeSimulationData(Configuration, CropSize, ActiveSize,
+                           (const size_t **)ActiveIndex, DomGrid, &SimGrid);
 
   ReadSimulationSpatialData(Configuration, DomainSize, DomainShape, CropSize,
-                            ActiveSize, ActiveIndex, SimGrid);
+                            ActiveSize, (const size_t **)ActiveIndex, SimGrid);
 }
 
-void FinalizeSimulationUnits() {
+void FinalizeSimulationUnits(void) {
   for (size_t i = 0; i < CropSize; i++) {
     for (size_t j = 0; j < ActiveSize[i]; j++) {
       SUnit = &SimGrid[i][j];

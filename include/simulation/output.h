@@ -4,13 +4,12 @@
 #include "defs.h"
 #include <netcdf.h>
 
-typedef struct OUTPUTVAR
-{
-    const char name[MAX_STRING];
-    const nc_type type;
-    const char units[MAX_STRING];
-    const char standard_name[MAX_STRING];
-    const char long_name[MAX_STRING];
+typedef struct OUTPUTVAR {
+  const char name[MAX_STRING];
+  const nc_type type;
+  const char units[MAX_STRING];
+  const char standard_name[MAX_STRING];
+  const char long_name[MAX_STRING];
 } OutputVar;
 
 static const OutputVar LAT_VAR = {
@@ -50,7 +49,8 @@ static const OutputVar OUTPUT_VARS[] = {
         NC_FLOAT,
         "-",
         "development",
-        "development stage between 0 (emergence), 1 (flowering), and 2 (maturity)",
+        "development stage between 0 (emergence), 1 (flowering), and 2 "
+        "(maturity)",
     },
     {
         "root_biomass",

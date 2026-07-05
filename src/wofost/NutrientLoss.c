@@ -8,7 +8,7 @@
 /*           and storage organs (kg N ha-1 d-1)                               */
 /* ---------------------------------------------------------------------------*/
 
-void NutrientLoss()
+void NutrientLoss(void)
 {
     Crop->N_rt.death_lv = Crop->prm.N_ResidualFrac_lv * Crop->drt.leaves;
     Crop->N_rt.death_st = Crop->prm.N_ResidualFrac_st * Crop->drt.stems;

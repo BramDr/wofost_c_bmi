@@ -8,7 +8,7 @@
 /*  Purpose: Calculate the partioning factors and correct them for nutrient or water stress */
 /* -----------------------------------------------------------------------------------------*/
 
-void Partioning()
+void Partioning(void)
 {
     float factor;
     float flv;

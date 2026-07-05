@@ -49,5 +49,6 @@ extern void FinalizeOutput(void);
 
 extern void InitializeSimulation(const char *config_file);
 extern void UpdateSimulation(void);
+extern void FinalizeSimulation(void);
 
 #endif // SIMULATION_H

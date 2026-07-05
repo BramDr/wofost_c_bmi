@@ -8,7 +8,7 @@
 /*  Purpose: To compute the partitioning of the total N/P/K uptake rate     */
 /*           (N,P,K UPTR) over leaves, stem, and roots kg  ha-1 d-1         */
 /* -------------------------------------------------------------------------*/
-void NutrientPartioning()
+void NutrientPartioning(void)
 {
     float Total_N_demand;
     float Total_P_demand;

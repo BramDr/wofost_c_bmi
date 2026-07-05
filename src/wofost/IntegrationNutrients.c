@@ -7,7 +7,7 @@
 /*  Purpose: Integration of the soil and crop nutrient rates  kg ha-1    */
 /* ----------------------------------------------------------------------*/
 
-void IntegrationNutrients()
+void IntegrationNutrients(void)
 {
     /* Integration of the total of soil N,P,K */
     Site->st_N_tot = max(0., Site->st_N_tot + Site->rt_N_tot);

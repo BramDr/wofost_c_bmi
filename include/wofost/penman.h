@@ -17,7 +17,7 @@ typedef struct EVP {
 extern Etp Penman;
 extern EVP Evtra;
 
-extern void CalcPenman();
-extern void CalcPenmanMonteith();
+extern void CalcPenman(void);
+extern void CalcPenmanMonteith(void);
 
 #endif // PENMAN_H

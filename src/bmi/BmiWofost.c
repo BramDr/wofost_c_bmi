@@ -1,144 +1,67 @@
 #include "bmi_wofost.h"
 #include "simulation.h"
+#include "time_utils.h"
+#include <assert.h>
 #include <bmi.h>
+#include <string.h>
 
 /* -----------------------------------------------------------------------
  * BMI active function implementations
  * ----------------------------------------------------------------------- */
 
 static int Initialize(struct Bmi *self, const char *config_file) {
+  UNUSED(self);
   InitializeSimulation(config_file);
   return BMI_SUCCESS;
 }
 static int Update(struct Bmi *self) {
+  UNUSED(self);
   UpdateSimulation();
   return BMI_SUCCESS;
 }
-static int Update_until(struct Bmi *self, double then) { return BMI_FAILURE; }
-static int Finalize(struct Bmi *self) { return BMI_FAILURE; }
+static int Update_until(struct Bmi *self, double then) {
+  UNUSED(self);
+  UNUSED(then);
+  return BMI_FAILURE;
+}
+static int Finalize(struct Bmi *self) {
+  UNUSED(self);
+  FinalizeSimulation();
+  return BMI_SUCCESS;
+}
 
 static int Get_component_name(struct Bmi *self, char *name) {
+  UNUSED(self);
   strncpy(name, "wofost", BMI_MAX_COMPONENT_NAME);
   return BMI_SUCCESS;
 }
 static int Get_input_item_count(struct Bmi *self, int *count) {
+  UNUSED(self);
   *count = N_BMI_INPUT_VARS;
   return BMI_SUCCESS;
 }
 static int Get_output_item_count(struct Bmi *self, int *count) {
+  UNUSED(self);
   *count = N_BMI_OUTPUT_VARS;
   return BMI_SUCCESS;
 }
 static int Get_input_var_names(struct Bmi *self, char **names) {
+  UNUSED(self);
   for (int i = 0; i < N_BMI_INPUT_VARS; i++) {
     strncpy(names[i], BMI_INPUT_VARS[i].name, BMI_MAX_VAR_NAME);
   }
   return BMI_SUCCESS;
 }
 static int Get_output_var_names(struct Bmi *self, char **names) {
+  UNUSED(self);
   for (int i = 0; i < N_BMI_OUTPUT_VARS; i++) {
     strncpy(names[i], BMI_OUTPUT_VARS[i].name, BMI_MAX_VAR_NAME);
   }
   return BMI_SUCCESS;
 }
 
-static int Get_var_grid(struct Bmi *self, const char *name, int *grid) {
-  const BmiVar *v = FindBmiVariable(name);
-  if (v == NULL)
-    return BMI_FAILURE;
-  *grid = v->grid;
-  return BMI_SUCCESS;
-}
-static int Get_var_type(struct Bmi *self, const char *name, char *type) {
-  const BmiVar *v = FindBmiVariable(name);
-  if (v == NULL)
-    return BMI_FAILURE;
-  strncpy(type, v->type, BMI_MAX_TYPE_NAME);
-  return BMI_SUCCESS;
-}
-static int Get_var_units(struct Bmi *self, const char *name, char *units) {
-  const BmiVar *v = FindBmiVariable(name);
-  if (v == NULL)
-    return BMI_FAILURE;
-  strncpy(units, v->units, BMI_MAX_UNITS_NAME);
-  return BMI_SUCCESS;
-}
-static int Get_var_itemsize(struct Bmi *self, const char *name, int *size) {
-  const BmiVar *v = FindBmiVariable(name);
-  if (v == NULL)
-    return BMI_FAILURE;
-  *size = v->itemsize;
-  return BMI_SUCCESS;
-}
-static int Get_var_nbytes(struct Bmi *self, const char *name, int *nbytes) {
-  const BmiVar *v = FindBmiVariable(name);
-  int grid_size;
-  if (v == NULL)
-    return BMI_FAILURE;
-  if (Get_grid_size(self, v->grid, &grid_size) != BMI_SUCCESS)
-    return BMI_FAILURE;
-  *nbytes = v->itemsize * grid_size;
-  return BMI_SUCCESS;
-}
-static int Get_var_location(struct Bmi *self, const char *name,
-                            char *location) {
-  const BmiVar *v = FindBmiVariable(name);
-  if (v == NULL)
-    return BMI_FAILURE;
-  strncpy(location, v->location, BMI_MAX_VAR_NAME);
-  return BMI_SUCCESS;
-}
-
-static int Get_current_time(struct Bmi *self, double *time) {
-  *time = difftime(CurrentTime, REFERENCE_TIME_T);
-  return BMI_SUCCESS;
-}
-static int Get_start_time(struct Bmi *self, double *time) {
-  time_t time_time_t = gmtime_portable(&Start);
-  if (time_time_t == -1) {
-    return BMI_FAILURE;
-  }
-  *time = difftime(time_time_t, REFERENCE_TIME_T);
-  return BMI_SUCCESS;
-}
-static int Get_end_time(struct Bmi *self, double *time) {
-  time_t time_time_t = gmtime_portable(&End);
-  if (time_time_t == -1) {
-    return BMI_FAILURE;
-  }
-  *time = difftime(time_time_t, REFERENCE_TIME_T);
-  return BMI_SUCCESS;
-}
-static int Get_time_units(struct Bmi *self, char *units) {
-  strncpy(units, "seconds since 1970-01-01 00:00:00", BMI_MAX_UNITS_NAME);
-  return BMI_SUCCESS;
-}
-static int Get_time_step(struct Bmi *self, double *time_step) {
-  assert(TIME_STEP > 0);
-  *time_step = TIME_STEP;
-  return BMI_SUCCESS;
-}
-
-static int Get_value(struct Bmi *self, const char *name, void *dest) {
-  return BMI_FAILURE;
-}
-static int Get_value_ptr(struct Bmi *self, const char *name, void **dest_ptr) {
-  return BMI_FAILURE;
-}
-static int Get_value_at_indices(struct Bmi *self, const char *name, void *dest,
-                                int *inds, int count) {
-  return BMI_FAILURE;
-}
-
-static int Set_value(struct Bmi *self, const char *name, void *src) {
-  return BMI_FAILURE;
-}
-static int Set_value_at_indices(struct Bmi *self, const char *name, int *inds,
-                                int count, void *src) {
-  return BMI_FAILURE;
-}
-
 static int Get_grid_rank(struct Bmi *self, int grid, int *rank) {
+  UNUSED(self);
   if (grid != GRID_ID) {
     return BMI_FAILURE;
   }
@@ -147,6 +70,7 @@ static int Get_grid_rank(struct Bmi *self, int grid, int *rank) {
   return BMI_SUCCESS;
 }
 static int Get_grid_size(struct Bmi *self, int grid, int *size) {
+  UNUSED(self);
   if (grid != GRID_ID) {
     return BMI_FAILURE;
   }
@@ -158,6 +82,7 @@ static int Get_grid_size(struct Bmi *self, int grid, int *size) {
   return BMI_SUCCESS;
 }
 static int Get_grid_type(struct Bmi *self, int grid, char *type) {
+  UNUSED(self);
   if (grid != GRID_ID) {
     return BMI_FAILURE;
   }
@@ -165,6 +90,7 @@ static int Get_grid_type(struct Bmi *self, int grid, char *type) {
   return BMI_SUCCESS;
 }
 static int Get_grid_shape(struct Bmi *self, int grid, int *shape) {
+  UNUSED(self);
   if (grid != GRID_ID) {
     return BMI_FAILURE;
   }
@@ -175,6 +101,7 @@ static int Get_grid_shape(struct Bmi *self, int grid, int *shape) {
   return BMI_SUCCESS;
 }
 static int Get_grid_spacing(struct Bmi *self, int grid, double *spacing) {
+  UNUSED(self);
   if (grid != GRID_ID) {
     return BMI_FAILURE;
   }
@@ -185,6 +112,7 @@ static int Get_grid_spacing(struct Bmi *self, int grid, double *spacing) {
   return BMI_SUCCESS;
 }
 static int Get_grid_origin(struct Bmi *self, int grid, double *origin) {
+  UNUSED(self);
   if (grid != GRID_ID) {
     return BMI_FAILURE;
   }
@@ -196,40 +124,196 @@ static int Get_grid_origin(struct Bmi *self, int grid, double *origin) {
   return BMI_SUCCESS;
 }
 
+static int Get_var_grid(struct Bmi *self, const char *name, int *grid) {
+  UNUSED(self);
+  const BmiVar *v = FindBmiVariable(name);
+  if (v == NULL)
+    return BMI_FAILURE;
+  *grid = v->grid;
+  return BMI_SUCCESS;
+}
+static int Get_var_type(struct Bmi *self, const char *name, char *type) {
+  UNUSED(self);
+  const BmiVar *v = FindBmiVariable(name);
+  if (v == NULL)
+    return BMI_FAILURE;
+  strncpy(type, v->type, BMI_MAX_TYPE_NAME);
+  return BMI_SUCCESS;
+}
+static int Get_var_units(struct Bmi *self, const char *name, char *units) {
+  UNUSED(self);
+  const BmiVar *v = FindBmiVariable(name);
+  if (v == NULL)
+    return BMI_FAILURE;
+  strncpy(units, v->units, BMI_MAX_UNITS_NAME);
+  return BMI_SUCCESS;
+}
+static int Get_var_itemsize(struct Bmi *self, const char *name, int *size) {
+  UNUSED(self);
+  const BmiVar *v = FindBmiVariable(name);
+  if (v == NULL)
+    return BMI_FAILURE;
+  *size = v->itemsize;
+  return BMI_SUCCESS;
+}
+static int Get_var_nbytes(struct Bmi *self, const char *name, int *nbytes) {
+  UNUSED(self);
+  const BmiVar *v = FindBmiVariable(name);
+  int grid_size;
+  if (v == NULL)
+    return BMI_FAILURE;
+  if (Get_grid_size(self, v->grid, &grid_size) != BMI_SUCCESS)
+    return BMI_FAILURE;
+  *nbytes = v->itemsize * grid_size;
+  return BMI_SUCCESS;
+}
+static int Get_var_location(struct Bmi *self, const char *name,
+                            char *location) {
+  UNUSED(self);
+  const BmiVar *v = FindBmiVariable(name);
+  if (v == NULL)
+    return BMI_FAILURE;
+  strncpy(location, v->location, BMI_MAX_VAR_NAME);
+  return BMI_SUCCESS;
+}
+
+static int Get_current_time(struct Bmi *self, double *time) {
+  UNUSED(self);
+  *time = difftime(CurrentTime, REFERENCE_TIME_T);
+  return BMI_SUCCESS;
+}
+static int Get_start_time(struct Bmi *self, double *time) {
+  UNUSED(self);
+  time_t time_time_t = timegm_portable(&Start);
+  if (time_time_t == -1) {
+    return BMI_FAILURE;
+  }
+  *time = difftime(time_time_t, REFERENCE_TIME_T);
+  return BMI_SUCCESS;
+}
+static int Get_end_time(struct Bmi *self, double *time) {
+  UNUSED(self);
+  time_t time_time_t = timegm_portable(&End);
+  if (time_time_t == -1) {
+    return BMI_FAILURE;
+  }
+  *time = difftime(time_time_t, REFERENCE_TIME_T);
+  return BMI_SUCCESS;
+}
+static int Get_time_units(struct Bmi *self, char *units) {
+  UNUSED(self);
+  strncpy(units, "seconds since 1970-01-01 00:00:00", BMI_MAX_UNITS_NAME);
+  return BMI_SUCCESS;
+}
+static int Get_time_step(struct Bmi *self, double *time_step) {
+  UNUSED(self);
+  assert(TIME_STEP > 0);
+  *time_step = TIME_STEP;
+  return BMI_SUCCESS;
+}
+
+static int Get_value(struct Bmi *self, const char *name, void *dest) {
+  UNUSED(self);
+  UNUSED(name);
+  UNUSED(dest);
+  return BMI_FAILURE;
+}
+static int Get_value_ptr(struct Bmi *self, const char *name, void **dest_ptr) {
+  UNUSED(self);
+  UNUSED(name);
+  UNUSED(dest_ptr);
+  return BMI_FAILURE;
+}
+static int Get_value_at_indices(struct Bmi *self, const char *name, void *dest,
+                                int *inds, int count) {
+  UNUSED(self);
+  UNUSED(name);
+  UNUSED(dest);
+  UNUSED(inds);
+  UNUSED(count);
+  return BMI_FAILURE;
+}
+
+static int Set_value(struct Bmi *self, const char *name, void *src) {
+  UNUSED(self);
+  UNUSED(name);
+  UNUSED(src);
+  return BMI_FAILURE;
+}
+static int Set_value_at_indices(struct Bmi *self, const char *name, int *inds,
+                                int count, void *src) {
+  UNUSED(self);
+  UNUSED(name);
+  UNUSED(inds);
+  UNUSED(count);
+  UNUSED(src);
+  return BMI_FAILURE;
+}
+
 /* -----------------------------------------------------------------------
  * BMI inactive function implementations
  * ----------------------------------------------------------------------- */
 
 static int Get_grid_x(struct Bmi *self, int grid, double *x) {
+  UNUSED(self);
+  UNUSED(grid);
+  UNUSED(x);
   return BMI_FAILURE;
 }
 static int Get_grid_y(struct Bmi *self, int grid, double *y) {
+  UNUSED(self);
+  UNUSED(grid);
+  UNUSED(y);
   return BMI_FAILURE;
 }
 static int Get_grid_z(struct Bmi *self, int grid, double *z) {
+  UNUSED(self);
+  UNUSED(grid);
+  UNUSED(z);
   return BMI_FAILURE;
 }
 
 static int Get_grid_node_count(struct Bmi *self, int grid, int *count) {
+  UNUSED(self);
+  UNUSED(grid);
+  UNUSED(count);
   return BMI_FAILURE;
 }
 static int Get_grid_edge_count(struct Bmi *self, int grid, int *count) {
+  UNUSED(self);
+  UNUSED(grid);
+  UNUSED(count);
   return BMI_FAILURE;
 }
 static int Get_grid_face_count(struct Bmi *self, int grid, int *count) {
+  UNUSED(self);
+  UNUSED(grid);
+  UNUSED(count);
   return BMI_FAILURE;
 }
 static int Get_grid_edge_nodes(struct Bmi *self, int grid, int *edge_nodes) {
+  UNUSED(self);
+  UNUSED(grid);
+  UNUSED(edge_nodes);
   return BMI_FAILURE;
 }
 static int Get_grid_face_edges(struct Bmi *self, int grid, int *face_edges) {
+  UNUSED(self);
+  UNUSED(grid);
+  UNUSED(face_edges);
   return BMI_FAILURE;
 }
 static int Get_grid_face_nodes(struct Bmi *self, int grid, int *face_nodes) {
+  UNUSED(self);
+  UNUSED(grid);
+  UNUSED(face_nodes);
   return BMI_FAILURE;
 }
 static int Get_grid_nodes_per_face(struct Bmi *self, int grid,
                                    int *nodes_per_face) {
+  UNUSED(self);
+  UNUSED(grid);
+  UNUSED(nodes_per_face);
   return BMI_FAILURE;
 }
 
@@ -292,4 +376,5 @@ Bmi *RegisterBmiWofost(Bmi *model) {
   model->get_grid_face_edges = Get_grid_face_edges;
   model->get_grid_face_nodes = Get_grid_face_nodes;
   model->get_grid_nodes_per_face = Get_grid_nodes_per_face;
+  return model;
 }

@@ -9,7 +9,7 @@
 /*  Purpose: To calculate the max nutrient concentration in the stems, leaves */
 /*           and roots organs (kg N,P,K ha-1)                                 */
 /* ---------------------------------------------------------------------------*/
-void NutrientMax()
+void NutrientMax(void)
 {
     /* Maximum N,P,K concentration in the leaves, from which the */
     /* N,P,K concentration in the stems and roots is derived     */
@@ -39,7 +39,7 @@ void NutrientMax()
 /*  Purpose: To compute the optimal nutrient concentration in the crop        */
 /*  organs (kg N,P,K ha-1 )                                                  */
 /* ---------------------------------------------------------------------------*/
-void NutrientOptimum()
+void NutrientOptimum(void)
 {
     /* Optimum N,P,K amount in vegetative above-ground living biomass */
     /* and its N concentration                                        */
@@ -57,7 +57,7 @@ void NutrientOptimum()
 /*  function NutrientDemand()                                                  */
 /*  Purpose: To compute the nutrient demand of crop organs (kg N,P,K ha-1 d-1) */
 /* ----------------------------------------------------------------------------*/
-void NutrientDemand()
+void NutrientDemand(void)
 {
     Crop->N_rt.Demand_lv = max(Crop->N_st.Max_lv * Crop->st.leaves - Crop->N_st.leaves, 0.);
     Crop->N_rt.Demand_st = max(Crop->N_st.Max_st * Crop->st.stems - Crop->N_st.stems, 0.);
@@ -75,7 +75,7 @@ void NutrientDemand()
     Crop->K_rt.Demand_so = max(Crop->K_st.Max_so * Crop->st.storage - Crop->K_st.storage, 0.) / Crop->prm.TCKT;
 }
 
-void RateCalcultionNutrients()
+void RateCalcultionNutrients(void)
 {
     NutrientMax();
 

@@ -1,6 +1,6 @@
 #include "simulation.h"
 
-void UpdateSimulation() {
+void UpdateSimulation(void) {
   if (Standalone)
     UpdateMeteo();
 

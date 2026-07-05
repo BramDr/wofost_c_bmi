@@ -1,6 +1,8 @@
 #include "wofost.h"
+#include "astro.h"
+#include "penman.h"
 
-void UpdateWofost() {
+void UpdateWofost(void) {
   int Emergence = SUnit->emergence;
   int CycleLength = 300;
 

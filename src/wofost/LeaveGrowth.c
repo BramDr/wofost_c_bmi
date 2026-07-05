@@ -9,7 +9,7 @@
 /*           stored in the Crop->properties linked list                       */
 /* ---------------------------------------------------------------------------*/
 
-void LeaveGrowth()
+void LeaveGrowth(void)
 {
     float GrowthExpLAI;
     float GrowthSourceLimited;

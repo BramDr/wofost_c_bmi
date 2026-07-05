@@ -9,7 +9,7 @@
 /*  rate variables and update the crop leave classes                          */
 /* ---------------------------------------------------------------------------*/
 
-void IntegrationCrop()
+void IntegrationCrop(void)
 {
     float PhysAgeing;
     Green *LeaveProperties;

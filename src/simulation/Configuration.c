@@ -35,30 +35,36 @@ static void ReadGeneralConfiguration(FILE *fp, Config *config) {
 
     if (strcmp(option, START_DATE_OPTION) == 0) {
       if (config->Start.tm_year != -1)
-        ERR(printf("Duplicate START_DATE line in config file: %s", trimmed));
+        ERR(printf("Duplicate %s line in config file: %s", START_DATE_OPTION,
+                   trimmed));
       if (sscanf(trimmed + used, "%d-%d-%d", &config->Start.tm_year,
                  &config->Start.tm_mon, &config->Start.tm_mday) != 3)
-        ERR(printf("Invalid START_DATE line in config file: %s", trimmed));
+        ERR(printf("Invalid %s line in config file: %s", START_DATE_OPTION,
+                   trimmed));
       config->Start.tm_year -= 1900; // Adjust year for struct tm
       config->Start.tm_mon -= 1;     // Adjust month for struct tm
     } else if (strcmp(option, END_DATE_OPTION) == 0) {
       if (config->End.tm_year != -1)
-        ERR(printf("Duplicate END_DATE line in config file: %s", trimmed));
+        ERR(printf("Duplicate %s line in config file: %s", END_DATE_OPTION,
+                   trimmed));
       if (sscanf(trimmed + used, "%d-%d-%d", &config->End.tm_year,
                  &config->End.tm_mon, &config->End.tm_mday) != 3)
-        ERR(printf("Invalid END_DATE line in config file: %s", trimmed));
+        ERR(printf("Invalid %s line in config file: %s", END_DATE_OPTION,
+                   trimmed));
       config->End.tm_year -= 1900; // Adjust year for struct tm
       config->End.tm_mon -= 1;     // Adjust month for struct tm
     } else if (strcmp(option, BMI_COUPLING_OPTION) == 0) {
       char coupling_type[MAX_STRING];
       if (sscanf(trimmed + used, "%s", coupling_type) != 1)
-        ERR(printf("Invalid BMI_COUPLING line in config file: %s", trimmed));
+        ERR(printf("Invalid %s line in config file: %s", BMI_COUPLING_OPTION,
+                   trimmed));
       if (strcmp(coupling_type, "STANDALONE") == 0) {
         config->standalone = true;
       } else if (strcmp(coupling_type, "COUPLED") == 0) {
         config->standalone = false;
       } else {
-        ERR(printf("Invalid BMI_COUPLING line in config file: %s", trimmed));
+        ERR(printf("Invalid %s line in config file: %s", BMI_COUPLING_OPTION,
+                   trimmed));
       }
     }
   }
@@ -79,7 +85,7 @@ static void ReadOutputConfiguration(FILE *fp, Config *config) {
   int used;
 
   // Clear
-  memset(config->output_path, 0, MAX_STRING);
+  memset(config->output_directory, 0, MAX_STRING);
   config->standalone = false;
 
   // Read
@@ -91,17 +97,20 @@ static void ReadOutputConfiguration(FILE *fp, Config *config) {
     if (sscanf(trimmed, "%s %n", option, &used) != 1)
       ERR(printf("Invalid line in config file: %s", trimmed));
 
-    if (strcmp(option, OUTPUT_PATH_OPTION) == 0) {
-      if (strlen(config->output_path) != 0)
-        ERR(printf("Duplicate OUTPUT_PATH line in config file: %s", trimmed));
-      if (sscanf(trimmed + used, "%s", config->output_path) != 1)
-        ERR(printf("Invalid OUTPUT_PATH line in config file: %s", trimmed));
+    if (strcmp(option, OUTPUT_DIRECTORY_OPTION) == 0) {
+      if (strlen(config->output_directory) != 0)
+        ERR(printf("Duplicate %s line in config file: %s",
+                   OUTPUT_DIRECTORY_OPTION, trimmed));
+      if (sscanf(trimmed + used, "%s", config->output_directory) != 1)
+        ERR(printf("Invalid %s line in config file: %s",
+                   OUTPUT_DIRECTORY_OPTION, trimmed));
     }
   }
 
   // Validate
-  if (strlen(config->output_path) == 0)
-    ERR(printf("Output path must be specified in the configuration."));
+  if (strlen(config->output_directory) == 0)
+    ERR(printf("%s must be specified in the configuration.",
+               OUTPUT_DIRECTORY_OPTION));
 }
 
 static void ReadWeatherConfiguration(FILE *fp, Config *config) {
@@ -139,7 +148,7 @@ static void ReadWeatherConfiguration(FILE *fp, Config *config) {
     NetCDFConfig *netcdf_config = &config->weather_files[j];
     if (strlen(netcdf_config->file_path) != 0)
       ERR(printf("Duplicate weather file line for type %s in config file: %s",
-                 type, trimmed));
+                 WEATHER_VARIABLES[j], trimmed));
     if (sscanf(trimmed + used + used2, "%s %s %s %s %s",
                netcdf_config->file_path, netcdf_config->time_name,
                netcdf_config->latitude_name, netcdf_config->longitude_name,
@@ -192,39 +201,51 @@ static void ReadCropConfiguration(FILE *fp, CropConfig *config) {
       found = true;
 
       if (strlen(config->crop_name) != 0)
-        ERR(printf("Duplicate CROP_NAME line in config file: %s", trimmed));
+        ERR(printf("Duplicate %s line in config file: %s", CROP_NAME_OPTION,
+                   trimmed));
       if (sscanf(trimmed + used, "%s", config->crop_name) != 1)
-        ERR(printf("Invalid crop name line in config file: %s", trimmed));
+        ERR(printf("Invalid %s line in config file: %s", CROP_NAME_OPTION,
+                   trimmed));
     } else if (strcmp(option, EMERGENCE_OPTION) == 0) {
       if (config->emergence != -1)
-        ERR(printf("Duplicate EMERGENCE line in config file: %s", trimmed));
+        ERR(printf("Duplicate %s line in config file: %s", EMERGENCE_OPTION,
+                   trimmed));
       if (sscanf(trimmed + used, "%d", &config->emergence) != 1)
-        ERR(printf("Invalid emergence line in config file: %s", trimmed));
+        ERR(printf("Invalid %s line in config file: %s", EMERGENCE_OPTION,
+                   trimmed));
     } else if (strcmp(option, CROP_FILE_OPTION) == 0) {
       if (strlen(config->crop_file) != 0)
-        ERR(printf("Duplicate CROP_FILE line in config file: %s", trimmed));
+        ERR(printf("Duplicate %s line in config file: %s", CROP_FILE_OPTION,
+                   trimmed));
       if (sscanf(trimmed + used, "%s", config->crop_file) != 1)
-        ERR(printf("Invalid crop file line in config file: %s", trimmed));
+        ERR(printf("Invalid %s line in config file: %s", CROP_FILE_OPTION,
+                   trimmed));
     } else if (strcmp(option, MANAGEMENT_FILE_OPTION) == 0) {
       if (strlen(config->management_file) != 0)
-        ERR(printf("Duplicate MANAGEMENT_FILE line in config file: %s",
-                   trimmed));
+        ERR(printf("Duplicate %s line in config file: %s",
+                   MANAGEMENT_FILE_OPTION, trimmed));
       if (sscanf(trimmed + used, "%s", config->management_file) != 1)
-        ERR(printf("Invalid management file line in config file: %s", trimmed));
+        ERR(printf("Invalid %s line in config file: %s", MANAGEMENT_FILE_OPTION,
+                   trimmed));
     } else if (strcmp(option, SOIL_FILE_OPTION) == 0) {
       if (strlen(config->soil_file) != 0)
-        ERR(printf("Duplicate SOIL_FILE line in config file: %s", trimmed));
+        ERR(printf("Duplicate %s line in config file: %s", SOIL_FILE_OPTION,
+                   trimmed));
       if (sscanf(trimmed + used, "%s", config->soil_file) != 1)
-        ERR(printf("Invalid soil file line in config file: %s", trimmed));
+        ERR(printf("Invalid %s line in config file: %s", SOIL_FILE_OPTION,
+                   trimmed));
     } else if (strcmp(option, SITE_FILE_OPTION) == 0) {
       if (strlen(config->site_file) != 0)
-        ERR(printf("Duplicate SITE_FILE line in config file: %s", trimmed));
+        ERR(printf("Duplicate %s line in config file: %s", SITE_FILE_OPTION,
+                   trimmed));
       if (sscanf(trimmed + used, "%s", config->site_file) != 1)
-        ERR(printf("Invalid site file line in config file: %s", trimmed));
+        ERR(printf("Invalid %s line in config file: %s", SITE_FILE_OPTION,
+                   trimmed));
     } else if (strcmp(option, DOMAIN_FILE_OPTION) == 0) {
 
       if (sscanf(trimmed + used, "%s %n", type, &used2) != 1)
-        ERR(printf("Invalid domain file line in config file: %s", trimmed));
+        ERR(printf("Invalid %s line in config file: %s", DOMAIN_FILE_OPTION,
+                   trimmed));
 
       size_t j;
       for (j = 0; j < DOMAIN_NTYPES; j++) {
@@ -243,7 +264,8 @@ static void ReadCropConfiguration(FILE *fp, CropConfig *config) {
                  netcdf_config->file_path, netcdf_config->latitude_name,
                  netcdf_config->longitude_name,
                  netcdf_config->variable_name) != 4)
-        ERR(printf("Invalid domain file line in config file: %s", trimmed));
+        ERR(printf("Invalid %s line in config file: %s", DOMAIN_FILE_OPTION,
+                   trimmed));
     } else {
       ERR(printf("Unknown option in crop configuration: %s", option));
     }
@@ -254,17 +276,17 @@ static void ReadCropConfiguration(FILE *fp, CropConfig *config) {
 
   // Validate
   if (strlen(config->crop_name) == 0)
-    ERR("Crop name must be specified in the crop configuration.");
+    ERR(printf("Crop name must be specified in the crop configuration."));
   if (config->emergence == -1)
-    ERR("Emergence must be specified in the crop configuration.");
+    ERR(printf("Emergence must be specified in the crop configuration."));
   if (strlen(config->crop_file) == 0)
-    ERR("Crop file must be specified in the crop configuration.");
+    ERR(printf("Crop file must be specified in the crop configuration."));
   if (strlen(config->management_file) == 0)
-    ERR("Management file must be specified in the crop configuration.");
+    ERR(printf("Management file must be specified in the crop configuration."));
   if (strlen(config->soil_file) == 0)
-    ERR("Soil file must be specified in the crop configuration.");
+    ERR(printf("Soil file must be specified in the crop configuration."));
   if (strlen(config->site_file) == 0)
-    ERR("Site file must be specified in the crop configuration.");
+    ERR(printf("Site file must be specified in the crop configuration."));
   for (int i = 0; i < DOMAIN_NTYPES; i++) {
     if (strlen(config->domain_files[i].file_path) == 0) {
       ERR(printf("Domain file for type %s is not specified in the crop "
@@ -331,6 +353,8 @@ void ReadConfiguration(const char *config_file, Config *configuration) {
   if (fp == NULL)
     ERR(printf("Cannot open config file %s.", config_file));
   ReadGeneralConfiguration(fp, configuration);
+  rewind(fp);
+  ReadOutputConfiguration(fp, configuration);
   rewind(fp);
   ReadWeatherConfiguration(fp, configuration);
   rewind(fp);

@@ -6,11 +6,6 @@
 #define NR_VARIABLES_SITE 12
 #define NR_TABLES_SITE 1
 
-char *SiteParam[] = {"IZT",    "IFUNRN", "IDRAIN", "SSMAX", "WAV", "ZTI", "DD",
-                     "RDMSOL", "NOTINF", "SSI",    "SMLIM", "CO2", "NULL"};
-
-char *SiteParam2[] = {"NINFTB", "NULL"};
-
 typedef struct FIELD {
   /* Water related parameters */
   float FlagGroundWater;
@@ -49,7 +44,7 @@ typedef struct FIELD {
 
 extern Field *Site;
 
-extern void GetSiteData();
-extern void FillSiteVariables();
+extern void GetSiteData(Field *SITE, char *sitefile);
+extern void FillSiteVariables(Field *SITE, float *Variable);
 
 #endif // SITE_H

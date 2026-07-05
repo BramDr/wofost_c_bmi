@@ -7,7 +7,7 @@
 /*  Purpose: Calculation of the soil nutrient rates kg ha-1 d-1   */
 /* ---------------------------------------------------------------*/
 
-void SoilNutrientRates()
+void SoilNutrientRates(void)
 {
     float N_fert;
     float P_fert;

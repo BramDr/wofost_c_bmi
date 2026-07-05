@@ -6,11 +6,6 @@
 #define NR_VARIABLES_MANAGEMENT 9
 #define NR_TABLES_MANAGEMENT 4
 
-char *ManageParam[] = {"NRFTAB", "PRFTAB",  "KRFTAB", "NMINS",   "RTNMINS",
-                       "PMINS",  "RTPMINS", "KMINS",  "RTKMINS", "NULL"};
-
-char *ManageParam2[] = {"FERNTAB", "FERPTAB", "FERKTAB", "IRRTAB", "NULL"};
-
 typedef struct MANAGEMENT {
   /** Tables for fertilizer application and recovery fraction **/
   TABLE_D *N_Fert_table;
@@ -31,7 +26,7 @@ typedef struct MANAGEMENT {
 
 extern Management *Mng;
 
-extern void GetManagement();
-extern void FillManageVariables();
+extern void GetManagement(Management *MNG, char *management);
+extern void FillManageVariables(Management *MNG, float *Variable);
 
 #endif // MANAGE_H

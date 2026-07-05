@@ -1,6 +1,7 @@
 #include "simulation.h"
 #include "time_utils.h"
 #include <netcdf.h>
+#include <string.h>
 
 static void InitializeMeteoData(const Config *config, const size_t size,
                                 const size_t shape[NR_DOMAIN_DIMENSIONS],
@@ -8,7 +9,7 @@ static void InitializeMeteoData(const Config *config, const size_t size,
   int status, ncid, varid;
 
   for (int i = 0; i < WEATHER_NTYPES; i++) {
-    NetCDFConfig *netcdf_config = &config->weather_files[i];
+    const NetCDFConfig *netcdf_config = &config->weather_files[i];
 
     if ((status = nc_open(netcdf_config->file_path, NC_NOWRITE, &ncid)) !=
         NC_NOERR)
@@ -33,13 +34,11 @@ static void InitializeMeteoData(const Config *config, const size_t size,
     ERR(printf("Could not allocate memory for weather data."));
 }
 
-static void StartMeteo(const Config *config, const size_t size,
-                       const size_t shape[NR_DOMAIN_DIMENSIONS],
-                       NetCDFMeta metas[WEATHER_NTYPES]) {
+static void StartMeteo(const Config *config, NetCDFMeta metas[WEATHER_NTYPES]) {
   int status;
 
   for (int i = 0; i < WEATHER_NTYPES; i++) {
-    NetCDFConfig *netcdf_config = &config->weather_files[i];
+    const NetCDFConfig *netcdf_config = &config->weather_files[i];
     NetCDFMeta *meta = &metas[i];
 
     if ((status = nc_open(netcdf_config->file_path, NC_NOWRITE, &meta->ncid)) !=
@@ -159,7 +158,7 @@ static void ReadMeteo(const size_t size,
   size_t count[NR_DOMAIN_DIMENSIONS + 1] = {1, shape[0], shape[1]};
 
   for (size_t i = 0; i < WEATHER_NTYPES; i++) {
-    NetCDFMeta *meta = &weather_meta[i];
+    const NetCDFMeta *meta = &weather_meta[i];
 
     start[0] = current - meta->time[0];
 
@@ -192,7 +191,7 @@ static void ReadMeteo(const size_t size,
         met->Vapour = data[j];
         break;
       default:
-        ERR(printf("Unknown weather variable type %d.", i));
+        ERR(printf("Unknown weather variable type %zu.", i));
       }
     }
   }
@@ -212,17 +211,17 @@ static void FinalizeMeteoData(float *data) {
   data = NULL;
 }
 
-void InitializeMeteo() {
+void InitializeMeteo(void) {
   InitializeMeteoData(Configuration, DomainSize, DomainShape, &WeatherData);
-  StartMeteo(Configuration, DomainSize, DomainShape, WeatherMetas);
+  StartMeteo(Configuration, WeatherMetas);
 }
 
-void UpdateMeteo() {
+void UpdateMeteo(void) {
   ReadMeteo(DomainSize, DomainShape, WeatherMetas, CurrentTime, WeatherData,
             DomGrid);
 }
 
-void FinalizeMeteo() {
+void FinalizeMeteo(void) {
   StopMeteo(WeatherMetas);
   FinalizeMeteoData(WeatherData);
 }

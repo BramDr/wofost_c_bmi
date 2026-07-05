@@ -7,7 +7,7 @@
 /*  Purpose: To compute the amount of nutrients in the organs that can        */
 /*  be translocated kg ha-1                                                   */
 /* ---------------------------------------------------------------------------*/
-void NutrientTranslocation()
+void NutrientTranslocation(void)
 {
     /* N amount available for translocation */
     Crop->N_st.Avail_lv = max(0., Crop->N_st.leaves - Crop->st.leaves * Crop->prm.N_ResidualFrac_lv);

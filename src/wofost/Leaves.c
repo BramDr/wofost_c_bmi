@@ -9,7 +9,7 @@
 /*  (i.e. high LAI), stress or age                                         */
 /* ------------------------------------------------------------------------*/
 
-float DyingLeaves()
+float DyingLeaves(void)
 {
     float tiny = 0.001;
     float Death, Death1, Death2, DeathStress, DeathAge;

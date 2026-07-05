@@ -10,6 +10,7 @@
 #define DOUBLE_TYPE "double"
 #define INT_TYPE "int"
 
+#define UNUSED(x) (void)(x)
 #define ERR(m)                                                                 \
   {                                                                            \
     m;                                                                         \

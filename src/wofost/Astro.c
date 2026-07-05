@@ -17,7 +17,7 @@
 /*         revised Allard de Wit, January 2011                          */
 /* ---------------------------------------------------------------------*/
 
-int Astro()
+int Astro(void)
 {
    float Declination;
    float SolarConstant;

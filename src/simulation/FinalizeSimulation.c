@@ -1,6 +1,6 @@
 #include "simulation.h"
 
-void FinalizeSimulation() {
+void FinalizeSimulation(void) {
   FinalizeSimulationUnits();
   FinalizeDomainUnits();
   FinalizeMeteo();

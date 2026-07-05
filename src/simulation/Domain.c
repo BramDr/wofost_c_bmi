@@ -1,5 +1,7 @@
 #include "simulation.h"
+#include <math.h>
 #include <netcdf.h>
+#include <string.h>
 
 static void InitializeDomainMeta(const NetCDFConfig *config, size_t *size,
                                  size_t (*shape)[NR_DOMAIN_DIMENSIONS],
@@ -70,10 +72,10 @@ static void InitializeDomainMeta(const NetCDFConfig *config, size_t *size,
                nc_strerror(status)));
 }
 
-static void InitializeDomainData(const NetCDFConfig *config, size_t size,
-                                 size_t shape[NR_DOMAIN_DIMENSIONS],
-                                 double latitudes[], double longitudes[],
-                                 DomUnit **grid) {
+static void InitializeDomainData(const size_t size,
+                                 const size_t shape[NR_DOMAIN_DIMENSIONS],
+                                 const double latitudes[],
+                                 const double longitudes[], DomUnit **grid) {
   *grid = malloc(size * sizeof(**grid));
   if (*grid == NULL)
     ERR(printf("Could not allocate memory for Grid."));
@@ -94,17 +96,17 @@ static void InitializeDomainData(const NetCDFConfig *config, size_t size,
   }
 }
 
-void InitializeDomainUnits() {
+void InitializeDomainUnits(void) {
   NetCDFConfig *template_config;
 
   template_config = &Configuration->weather_files[WEATHER_TMIN];
   InitializeDomainMeta(template_config, &DomainSize, &DomainShape, &Latitudes,
                        &Longitudes, &Resolution);
-  InitializeDomainData(template_config, DomainSize, DomainShape, Latitudes,
-                       Longitudes, &DomGrid);
+  InitializeDomainData(DomainSize, DomainShape, Latitudes, Longitudes,
+                       &DomGrid);
 }
 
-void FinalizeDomainUnits() {
+void FinalizeDomainUnits(void) {
   free(Latitudes);
   free(Longitudes);
   free(DomGrid);

@@ -9,7 +9,7 @@
 /* Purpose: Initialize the water balance (WatBal) */
 /*------------------------------------------------*/
 
-void InitializeWatBal()
+void InitializeWatBal(void)
 {
         float KDiffuse;
 
@@ -62,7 +62,7 @@ void InitializeWatBal()
 /* Purpose: Calculate the rate of the WatBal struct  */
 /*---------------------------------------------------*/
 
-void RateCalulationWatBal()
+void RateCalulationWatBal(void)
 {
 
         float Available;
@@ -103,7 +103,7 @@ void RateCalulationWatBal()
         {
                 /* Without surface storage */
                 if (Site->InfRainDependent)
-                        WatBal->rt.Infiltration =
+                        RINPRE = WatBal->rt.Infiltration =
                             (1. - Site->NotInfiltrating * Afgen(Site->NotInfTB, &Meteo->Rain)) *
                                 Meteo->Rain +
                             WatBal->rt.Irrigation + WatBal->st.SurfaceStorage / Step;
@@ -168,7 +168,7 @@ void RateCalulationWatBal()
 /* and calculate the water content in the rooted zone  */
 /*-----------------------------------------------------*/
 
-void IntegrationWatBal()
+void IntegrationWatBal(void)
 {
         float PreSurfaceStorage;
         float WaterRootExt;

@@ -7,7 +7,7 @@
 /*  Purpose: Initialization of nutrient parameters                     */
 /* --------------------------------------------------------------------*/
 
-void InitializeNutrients()
+void InitializeNutrients(void)
 {
     /* Initial maximum N concentration in plant organs per kg biomass [kg N kg-1 dry biomass]   */
     Crop->N_st.Max_lv = Afgen(Crop->prm.N_MaxLeaves, &(Crop->st.Development));

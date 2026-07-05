@@ -9,11 +9,10 @@
 /*           is set to 0 the Emergence date has to be established.            */
 /* ---------------------------------------------------------------------------*/
 
-void IfSowing(const struct tm start)
+void IfSowing(const int start)
 {
     struct tm Current = *gmtime(&CurrentTime);
-    if (Current.tm_mon == start.tm_mon &&
-        Current.tm_mday == start.tm_mday)
+    if (Current.tm_yday == start)
     {
         Crop->Sowing = 1;
     }

@@ -20,7 +20,7 @@
 /*         revised van Kraalingen, and Allard de Wit, Sep 2011          */
 /* ---------------------------------------------------------------------*/
 
-void CalcPenman()
+void CalcPenman(void)
 {
     float RelSunShineDuration;
     // float Tmpa;
@@ -97,7 +97,7 @@ void CalcPenman()
     // Penman.ET0 = max(0., 0.1 * (delta*Rnc + Gamma*Eac)/(delta + Gamma));
 }
 
-void CalcPenmanMonteith()
+void CalcPenmanMonteith(void)
 {
     // float Tmpa;
     float Vap;

@@ -5,7 +5,7 @@
 /*  Purpose: Set all rates to zero in one go                                  */
 /* ---------------------------------------------------------------------------*/
 
-void RatesToZero()
+void RatesToZero(void)
 {
     /* Set the dying rates */
     Crop->drt.roots = 0.;

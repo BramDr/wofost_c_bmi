@@ -8,7 +8,7 @@
 /*           organs (kg N,P,K ha-1 d-1)                                       */
 /* ---------------------------------------------------------------------------*/
 
-void CropNutrientRates()
+void CropNutrientRates(void)
 {
     float Avail_N;
     float Avail_P;
