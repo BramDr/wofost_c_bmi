@@ -33,7 +33,7 @@ float DyingLeaves(void)
     if (Crop->LeaveProperties != NULL)
     {
         /* Oldest leave classes are at the beginning of the list */
-        while (Death > Crop->LeaveProperties->weight)
+        while (Crop->LeaveProperties != NULL && Death > Crop->LeaveProperties->weight)
         {
             Death = Death - Crop->LeaveProperties->weight;
             wipe = Crop->LeaveProperties;

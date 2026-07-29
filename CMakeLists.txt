@@ -14,6 +14,18 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
   add_compile_options(-Wall -Wextra -Wformat=2 -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations)
 endif()
 
+# Lets DBG() output be turned on in a non-Debug build (e.g. Release) without
+# a full reconfigure to CMAKE_BUILD_TYPE=Debug. defs.h treats NDEBUG as an
+# unconditional kill switch for DBG(), matching assert()'s convention, so any
+# NDEBUG that CMake's default Release/RelWithDebInfo/MinSizeRel flags add has
+# to be stripped back out for this to take effect.
+option(WOFOST_BMI_VERBOSE "Enable DBG() debug output regardless of build type" OFF)
+if(WOFOST_BMI_VERBOSE)
+  foreach(cfg RELEASE RELWITHDEBINFO MINSIZEREL)
+    string(REPLACE "-DNDEBUG" "" CMAKE_C_FLAGS_${cfg} "${CMAKE_C_FLAGS_${cfg}}")
+  endforeach()
+endif()
+
 # netCDF is on conda-forge with a CMake package config; picked up automatically
 # once the conda environment (see environment.yml) is active.
 find_package(netCDF REQUIRED)
@@ -53,4 +65,11 @@ target_include_directories(wofost_bmi PRIVATE
 target_link_libraries(wofost_bmi PRIVATE
   netCDF::netcdf
   m
+)
+
+# Enables the DBG() macro in include/defs.h for Debug builds, or any build
+# when WOFOST_BMI_VERBOSE is set, regardless of whether the generator is
+# single-config (Makefiles/Ninja) or multi-config (Visual Studio).
+target_compile_definitions(wofost_bmi PRIVATE
+  $<$<OR:$<CONFIG:Debug>,$<BOOL:${WOFOST_BMI_VERBOSE}>>:DEBUG>
 )

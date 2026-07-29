@@ -83,7 +83,7 @@ static const char *CropParam2[] = {
 /* ------------------------------------------------------------------------*/
 
 void GetCropData(Plant *CROP, char *cropfile) {
-  TABLE *Table[NR_TABLES_CRP], *start;
+  TABLE *Table[NR_TABLES_CRP] = {NULL}, *start;
 
   char line[MAX_STRING];
   int i, c, count;
@@ -180,7 +180,16 @@ void GetCropData(Plant *CROP, char *cropfile) {
   if (CROP->prm.IdentifyAnthesis < 2) {
     CROP->prm.VernalizationRate = NULL;
   } else {
+    if (Table[0] == NULL)
+      ERR("VERNRTB table must be specified in file %s when "
+          "vernalization is used (IDSL >= 2).",
+          cropfile);
     CROP->prm.VernalizationRate = Table[0];
+  }
+
+  for (i = 1; i < NR_TABLES_CRP; i++) {
+    if (Table[i] == NULL)
+      ERR("Missing required crop table (index %d) in file %s.", i, cropfile);
   }
 
   CROP->prm.DeltaTempSum = Table[1];

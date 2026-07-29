@@ -1,6 +1,9 @@
 #include "simulation.h"
+#include <math.h>
 
 void UpdateSimulation(void) {
+  DBG("UpdateSimulation");
+
   if (Standalone)
     UpdateMeteo();
 
@@ -14,6 +17,12 @@ void UpdateSimulation(void) {
       Site = &SUnit->ste;
       Mng = &SUnit->mng;
       WatBal = &SUnit->soil;
+      if (isnan(Meteo->Tmin) || isnan(Meteo->Tmax) || isnan(Meteo->Radiation) ||
+          isnan(Meteo->Rain) || isnan(Meteo->Windspeed) ||
+          isnan(Meteo->Vapour)) {
+        ERR("Missing weather data at time %ld for crop %zu, unit %zu.",
+            CurrentTime, i, j);
+      }
       UpdateWofost();
     }
   }

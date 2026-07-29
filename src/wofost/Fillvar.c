@@ -103,7 +103,7 @@ void FillCropVariables(Plant *CROP, float *Variable) {
   CROP->prm.TCKT = Variable[64];
   CROP->prm.N_fixation = Variable[65];
 
-  for (i = 0; i <= NR_VARIABLES_CRP; i++) {
+  for (i = 0; i < NR_VARIABLES_CRP; i++) {
     Variable[i] = 0.;
   }
 }
@@ -126,7 +126,7 @@ void FillSoilVariables(Soil *SOIL, float *Variable) {
 
   /* No workability parameters will be used in this version */
 
-  for (i = 0; i <= NR_VARIABLES_SOIL; i++) {
+  for (i = 0; i < NR_VARIABLES_SOIL; i++) {
     Variable[i] = 0.;
   }
 }
@@ -152,7 +152,7 @@ void FillSiteVariables(Field *SITE, float *Variable) {
   SITE->MaxInitSoilM = Variable[10];
   SITE->CO2 = Variable[11];
 
-  for (i = 0; i <= NR_VARIABLES_SITE; i++) {
+  for (i = 0; i < NR_VARIABLES_SITE; i++) {
     Variable[i] = 0.;
   }
 }
@@ -174,7 +174,7 @@ void FillManageVariables(Management *MNG, float *Variable) {
   MNG->K_Mins = Variable[7];
   MNG->KRecoveryFrac = Variable[8];
 
-  for (i = 0; i <= NR_VARIABLES_MANAGEMENT; i++) {
+  for (i = 0; i < NR_VARIABLES_MANAGEMENT; i++) {
     Variable[i] = 0.;
   }
 }

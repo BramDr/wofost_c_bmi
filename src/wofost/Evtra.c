@@ -75,7 +75,8 @@ void EvapTra(void)
         /* Count days since start oxygen shortage (up to 4 days) */
         if (WatBal->st.Moisture >= SoilMoistureAeration)
         {
-            Crop->DaysOxygenStress = min(Crop->DaysOxygenStress++, 4.);
+            Crop->DaysOxygenStress++;
+            Crop->DaysOxygenStress = min(Crop->DaysOxygenStress, 4.);
         }
         else
         {

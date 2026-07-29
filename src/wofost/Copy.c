@@ -7,7 +7,7 @@ static TABLE *copy_table(const TABLE *src) {
   for (const TABLE *n = src; n != NULL; n = n->next) {
     TABLE *node = malloc(sizeof(TABLE));
     if (node == NULL)
-      ERR(printf("could not allocate TABLE node."));
+      ERR("could not allocate TABLE node.");
     *node = *n;
     node->next = NULL;
     *tail = node;
@@ -22,7 +22,7 @@ static TABLE_D *copy_table_d(const TABLE_D *src) {
   for (const TABLE_D *n = src; n != NULL; n = n->next) {
     TABLE_D *node = malloc(sizeof(TABLE_D));
     if (node == NULL)
-      ERR(printf("could not allocate TABLE_D node."));
+      ERR("could not allocate TABLE_D node.");
     *node = *n;
     node->next = NULL;
     *tail = node;
@@ -37,7 +37,7 @@ static Green *copy_green(const Green *src) {
   for (const Green *n = src; n != NULL; n = n->next) {
     Green *node = malloc(sizeof(Green));
     if (node == NULL)
-      ERR(printf("could not allocate Green node."));
+      ERR("could not allocate Green node.");
     *node = *n;
     node->next = NULL;
     *tail = node;

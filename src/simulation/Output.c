@@ -1,4 +1,5 @@
 #include "output.h"
+#include "file_utils.h"
 #include "simulation.h"
 #include <netcdf.h>
 #include <string.h>
@@ -6,23 +7,24 @@
 static void InitializeOutputData(const size_t domain_size,
                                  const size_t crop_size, NetCDFMeta ***metas,
                                  float **float_data, int **int_data) {
+  DBG("InitializeOutputData");
+
   *float_data = malloc(domain_size * sizeof(**float_data));
   if (*float_data == NULL)
-    ERR(printf("Could not allocate memory for output float data."));
+    ERR("Could not allocate memory for output float data.");
 
   *int_data = malloc(domain_size * sizeof(**int_data));
   if (*int_data == NULL)
-    ERR(printf("Could not allocate memory for output int data."));
+    ERR("Could not allocate memory for output int data.");
 
   *metas = malloc(crop_size * sizeof(**metas));
   if (*metas == NULL)
-    ERR(printf("Could not allocate memory for output metadata."));
+    ERR("Could not allocate memory for output metadata.");
 
   for (size_t i = 0; i < crop_size; i++) {
     (*metas)[i] = malloc(OUTPUT_NTYPES * sizeof(*(*metas)[i]));
     if ((*metas)[i] == NULL)
-      ERR(printf("Could not allocate memory for output metadata for crop %zu.",
-                 i));
+      ERR("Could not allocate memory for output metadata for crop %zu.", i);
   }
 }
 
@@ -34,25 +36,30 @@ static void DefineVariableAttributes(const int ncid, const int varid,
 
   if ((status = nc_put_att_text(ncid, varid, "units", strlen(units), units)) !=
       NC_NOERR)
-    ERR(printf("Cannot define attribute 'units' for variable in file: %s.",
-               nc_strerror(status)));
+    ERR("Cannot define attribute 'units' for variable in file: %s.",
+        nc_strerror(status));
   if ((status = nc_put_att_text(ncid, varid, "standard_name",
                                 strlen(standard_name), standard_name)) !=
       NC_NOERR)
-    ERR(printf(
-        "Cannot define attribute 'standard_name' for variable in file: %s.",
-        nc_strerror(status)));
+    ERR("Cannot define attribute 'standard_name' for variable in file: %s.",
+        nc_strerror(status));
   if ((status = nc_put_att_text(ncid, varid, "long_name", strlen(long_name),
                                 long_name)) != NC_NOERR)
-    ERR(printf("Cannot define attribute 'long_name' for variable in file: %s.",
-               nc_strerror(status)));
+    ERR("Cannot define attribute 'long_name' for variable in file: %s.",
+        nc_strerror(status));
 }
 
 static void StartOutput(const Config *configuration,
                         const size_t domain_shape[NR_DOMAIN_DIMENSIONS],
                         const double latitudes[], const double longitudes[],
                         const size_t crop_size, NetCDFMeta **metas) {
+  DBG("StartOutput");
+
   int status;
+
+  if (mkdir_if_not_exists(configuration->output_directory) != 0)
+    ERR("Cannot create output directory %s: %s.",
+        configuration->output_directory, strerror(errno));
 
   for (size_t i = 0; i < crop_size; i++) {
     CropConfig *crop_config = &configuration->crop_configurations[i];
@@ -70,72 +77,72 @@ static void StartOutput(const Config *configuration,
       if (snprintf(output_file, MAX_STRING, "%s/%s_%s.nc",
                    configuration->output_directory, crop_name,
                    var_name) >= MAX_STRING)
-        ERR(printf("Output file path is too long for crop %s, variable %s.",
-                   crop_name, var_name));
+        ERR("Output file path is too long for crop %s, variable %s.", crop_name,
+            var_name);
 
       if ((status = nc_create(output_file, NC_NETCDF4, &meta->ncid)) !=
           NC_NOERR)
-        ERR(printf("Cannot create output file %s: %s.", output_file,
-                   nc_strerror(status)));
+        ERR("Cannot create output file %s: %s.", output_file,
+            nc_strerror(status));
 
       if ((status = nc_def_dim(meta->ncid, TIME_VAR.name, NC_UNLIMITED,
                                &meta->time_dimid)) != NC_NOERR)
-        ERR(printf("Cannot define time dimension in file %s: %s.", output_file,
-                   nc_strerror(status)));
+        ERR("Cannot define time dimension in file %s: %s.", output_file,
+            nc_strerror(status));
       if ((status = nc_def_dim(meta->ncid, LAT_VAR.name, domain_shape[0],
                                &meta->lat_dimid)) != NC_NOERR)
-        ERR(printf("Cannot define latitude dimension in file %s: %s.",
-                   output_file, nc_strerror(status)));
+        ERR("Cannot define latitude dimension in file %s: %s.", output_file,
+            nc_strerror(status));
       if ((status = nc_def_dim(meta->ncid, LON_VAR.name, domain_shape[1],
                                &meta->lon_dimid)) != NC_NOERR)
-        ERR(printf("Cannot define longitude dimension in file %s: %s.",
-                   output_file, nc_strerror(status)));
+        ERR("Cannot define longitude dimension in file %s: %s.", output_file,
+            nc_strerror(status));
+      meta->time_len = 0;
+      meta->lat_len = domain_shape[0];
+      meta->lon_len = domain_shape[1];
 
       /* Time variable */
       if ((status = nc_def_var(meta->ncid, TIME_VAR.name, TIME_VAR.type, 1,
                                &meta->time_dimid, &meta->time_varid)) !=
           NC_NOERR)
-        ERR(printf("Cannot define variable %s in file %s: %s.", TIME_VAR.name,
-                   output_file, nc_strerror(status)));
+        ERR("Cannot define variable %s in file %s: %s.", TIME_VAR.name,
+            output_file, nc_strerror(status));
       DefineVariableAttributes(meta->ncid, meta->time_varid, TIME_VAR.units,
                                TIME_VAR.standard_name, TIME_VAR.long_name);
       if ((status = nc_put_att_text(meta->ncid, meta->time_varid, "calendar",
                                     strlen("standard"), "standard")) !=
           NC_NOERR)
-        ERR(printf("Cannot define attribute 'calendar' for variable %s in file "
-                   "%s: %s.",
-                   TIME_VAR.name, output_file, nc_strerror(status)));
+        ERR("Cannot define attribute 'calendar' for variable %s in file "
+            "%s: %s.",
+            TIME_VAR.name, output_file, nc_strerror(status));
       if ((status = nc_put_att_text(meta->ncid, meta->time_varid, "axis",
                                     strlen("T"), "T")) != NC_NOERR)
-        ERR(printf(
-            "Cannot define attribute 'axis' for variable %s in file %s: %s.",
-            TIME_VAR.name, output_file, nc_strerror(status)));
+        ERR("Cannot define attribute 'axis' for variable %s in file %s: %s.",
+            TIME_VAR.name, output_file, nc_strerror(status));
 
       /* Latitude variable */
       if ((status = nc_def_var(meta->ncid, LAT_VAR.name, LAT_VAR.type, 1,
                                &meta->lat_dimid, &meta->lat_varid)) != NC_NOERR)
-        ERR(printf("Cannot define variable %s in file %s: %s.", LAT_VAR.name,
-                   output_file, nc_strerror(status)));
+        ERR("Cannot define variable %s in file %s: %s.", LAT_VAR.name,
+            output_file, nc_strerror(status));
       DefineVariableAttributes(meta->ncid, meta->lat_varid, LAT_VAR.units,
                                LAT_VAR.standard_name, LAT_VAR.long_name);
       if ((status = nc_put_att_text(meta->ncid, meta->lat_varid, "axis",
                                     strlen("Y"), "Y")) != NC_NOERR)
-        ERR(printf(
-            "Cannot define attribute 'axis' for variable %s in file %s: %s.",
-            LAT_VAR.name, output_file, nc_strerror(status)));
+        ERR("Cannot define attribute 'axis' for variable %s in file %s: %s.",
+            LAT_VAR.name, output_file, nc_strerror(status));
 
       /* Longitude variable */
       if ((status = nc_def_var(meta->ncid, LON_VAR.name, LON_VAR.type, 1,
                                &meta->lon_dimid, &meta->lon_varid)) != NC_NOERR)
-        ERR(printf("Cannot define variable %s in file %s: %s.", LON_VAR.name,
-                   output_file, nc_strerror(status)));
+        ERR("Cannot define variable %s in file %s: %s.", LON_VAR.name,
+            output_file, nc_strerror(status));
       DefineVariableAttributes(meta->ncid, meta->lon_varid, LON_VAR.units,
                                LON_VAR.standard_name, LON_VAR.long_name);
       if ((status = nc_put_att_text(meta->ncid, meta->lon_varid, "axis",
                                     strlen("X"), "X")) != NC_NOERR)
-        ERR(printf(
-            "Cannot define attribute 'axis' for variable %s in file %s: %s.",
-            LON_VAR.name, output_file, nc_strerror(status)));
+        ERR("Cannot define attribute 'axis' for variable %s in file %s: %s.",
+            LON_VAR.name, output_file, nc_strerror(status));
 
       /* Output variable */
       int dimids[NR_DOMAIN_DIMENSIONS + 1] = {meta->time_dimid, meta->lat_dimid,
@@ -143,8 +150,8 @@ static void StartOutput(const Config *configuration,
       if ((status = nc_def_var(meta->ncid, output_var->name, output_var->type,
                                NR_DOMAIN_DIMENSIONS + 1, dimids,
                                &meta->varid)) != NC_NOERR)
-        ERR(printf("Cannot define variable %s in file %s: %s.",
-                   output_var->name, output_file, nc_strerror(status)));
+        ERR("Cannot define variable %s in file %s: %s.", output_var->name,
+            output_file, nc_strerror(status));
       DefineVariableAttributes(meta->ncid, meta->varid, output_var->units,
                                output_var->standard_name,
                                output_var->long_name);
@@ -153,31 +160,31 @@ static void StartOutput(const Config *configuration,
         float fill_value = NC_FILL_FLOAT;
         if ((status = nc_def_var_fill(meta->ncid, meta->varid, NC_FILL,
                                       &fill_value)) != NC_NOERR)
-          ERR(printf("Cannot define fill value for variable %s in file %s: %s.",
-                     output_var->name, output_file, nc_strerror(status)));
+          ERR("Cannot define fill value for variable %s in file %s: %s.",
+              output_var->name, output_file, nc_strerror(status));
       } else if (output_var->type == NC_INT) {
         int fill_value = NC_FILL_INT;
         if ((status = nc_def_var_fill(meta->ncid, meta->varid, NC_FILL,
                                       &fill_value)) != NC_NOERR)
-          ERR(printf("Cannot define fill value for variable %s in file %s: %s.",
-                     output_var->name, output_file, nc_strerror(status)));
+          ERR("Cannot define fill value for variable %s in file %s: %s.",
+              output_var->name, output_file, nc_strerror(status));
       } else {
-        ERR(printf("Unsupported variable type %d for variable %s in file %s.",
-                   output_var->type, output_var->name, output_file));
+        ERR("Unsupported variable type %d for variable %s in file %s.",
+            output_var->type, output_var->name, output_file);
       }
 
       if ((status = nc_enddef(meta->ncid)) != NC_NOERR)
-        ERR(printf("Cannot end definition mode for file %s: %s.", output_file,
-                   nc_strerror(status)));
+        ERR("Cannot end definition mode for file %s: %s.", output_file,
+            nc_strerror(status));
 
       if ((status = nc_put_var_double(meta->ncid, meta->lat_varid,
                                       latitudes)) != NC_NOERR)
-        ERR(printf("Cannot write data for variable %s in file %s: %s.",
-                   LAT_VAR.name, output_file, nc_strerror(status)));
+        ERR("Cannot write data for variable %s in file %s: %s.", LAT_VAR.name,
+            output_file, nc_strerror(status));
       if ((status = nc_put_var_double(meta->ncid, meta->lon_varid,
                                       longitudes)) != NC_NOERR)
-        ERR(printf("Cannot write data for variable %s in file %s: %s.",
-                   LON_VAR.name, output_file, nc_strerror(status)));
+        ERR("Cannot write data for variable %s in file %s: %s.", LON_VAR.name,
+            output_file, nc_strerror(status));
     }
   }
 }
@@ -190,16 +197,16 @@ static void WriteOutputFloatData(const OutputVar *var, const float data[],
 
   if ((status = nc_put_vara_float(meta->ncid, meta->varid, start, count,
                                   data)) != NC_NOERR)
-    ERR(printf("Cannot write data for variable %s in file %d: %s.", var->name,
-               meta->ncid, nc_strerror(status)));
+    ERR("Cannot write data for variable %s in file %d: %s.", var->name,
+        meta->ncid, nc_strerror(status));
 
   int time = CurrentTime / TIME_STEP; // Convert seconds to days
   size_t time_start[1] = {meta->time_len};
   size_t time_count[1] = {1};
   if ((status = nc_put_vara_int(meta->ncid, meta->time_varid, time_start,
                                 time_count, &time)) != NC_NOERR)
-    ERR(printf("Cannot write data for variable %s in file %d: %s.",
-               TIME_VAR.name, meta->ncid, nc_strerror(status)));
+    ERR("Cannot write data for variable %s in file %d: %s.", TIME_VAR.name,
+        meta->ncid, nc_strerror(status));
 
   meta->time_len++;
 }
@@ -212,16 +219,16 @@ static void WriteOutputIntData(const OutputVar *var, const int data[],
 
   if ((status = nc_put_vara_int(meta->ncid, meta->varid, start, count, data)) !=
       NC_NOERR)
-    ERR(printf("Cannot write data for variable %s in file %d: %s.", var->name,
-               meta->ncid, nc_strerror(status)));
+    ERR("Cannot write data for variable %s in file %d: %s.", var->name,
+        meta->ncid, nc_strerror(status));
 
   int time = CurrentTime / TIME_STEP; // Convert seconds to days
   size_t time_start[1] = {meta->time_len};
   size_t time_count[1] = {1};
   if ((status = nc_put_vara_int(meta->ncid, meta->time_varid, time_start,
                                 time_count, &time)) != NC_NOERR)
-    ERR(printf("Cannot write data for variable %s in file %d: %s.",
-               TIME_VAR.name, meta->ncid, nc_strerror(status)));
+    ERR("Cannot write data for variable %s in file %d: %s.", TIME_VAR.name,
+        meta->ncid, nc_strerror(status));
 
   meta->time_len++;
 }
@@ -230,6 +237,7 @@ static void WriteOutputData(const size_t domain_size, const size_t crop_size,
                             const size_t active_size[], size_t *active_index[],
                             NetCDFMeta **metas, float float_data[],
                             int int_data[], SimUnit *grid[]) {
+  DBG("WriteOutputData");
 
   for (size_t i = 0; i < crop_size; i++) {
 
@@ -246,8 +254,8 @@ static void WriteOutputData(const size_t domain_size, const size_t crop_size,
           int_data[k] = NC_FILL_INT;
         }
       } else {
-        ERR(printf("Unsupported variable type %d for variable %s.",
-                   output_var->type, output_var->name));
+        ERR("Unsupported variable type %d for variable %s.", output_var->type,
+            output_var->name);
       }
 
       for (size_t k = 0; k < active_size[i]; k++) {
@@ -338,7 +346,7 @@ static void WriteOutputData(const size_t domain_size, const size_t crop_size,
           float_data[index] = unit->crp.K_st.storage;
           break;
         default:
-          ERR(printf("Unknown output variable index %zu.", j));
+          ERR("Unknown output variable index %zu.", j);
         }
       }
 
@@ -352,19 +360,23 @@ static void WriteOutputData(const size_t domain_size, const size_t crop_size,
 }
 
 static void StopOutput(const size_t crop_size, NetCDFMeta **metas) {
+  DBG("StopOutput");
+
   int status;
   for (size_t i = 0; i < crop_size; i++) {
     for (size_t j = 0; j < OUTPUT_NTYPES; j++) {
       NetCDFMeta *meta = &metas[i][j];
       if ((status = nc_close(meta->ncid)) != NC_NOERR)
-        ERR(printf("Cannot close output file %d: %s.", meta->ncid,
-                   nc_strerror(status)));
+        ERR("Cannot close output file %d: %s.", meta->ncid,
+            nc_strerror(status));
     }
   }
 }
 
 static void FinalizeOutputData(float *float_data[], int *int_data[],
                                NetCDFMeta ***metas) {
+  DBG("FinalizeOutputData");
+
   free(*float_data);
   free(*int_data);
 
@@ -380,6 +392,8 @@ static void FinalizeOutputData(float *float_data[], int *int_data[],
 }
 
 void InitializeOutput(void) {
+  DBG("InitializeOutput");
+
   InitializeOutputData(DomainSize, CropSize, &OutputMetas, &OutputFloatData,
                        &OutputIntData);
   StartOutput(Configuration, DomainShape, Latitudes, Longitudes, CropSize,
@@ -392,6 +406,8 @@ void UpdateOutput(void) {
 }
 
 void FinalizeOutput(void) {
+  DBG("FinalizeOutput");
+
   StopOutput(CropSize, OutputMetas);
   FinalizeOutputData(&OutputFloatData, &OutputIntData, &OutputMetas);
 }

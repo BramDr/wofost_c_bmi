@@ -1,7 +1,6 @@
 #include "bmi_wofost.h"
 #include "simulation.h"
 #include "time_utils.h"
-#include <assert.h>
 #include <bmi.h>
 #include <string.h>
 
@@ -65,7 +64,9 @@ static int Get_grid_rank(struct Bmi *self, int grid, int *rank) {
   if (grid != GRID_ID) {
     return BMI_FAILURE;
   }
-  assert(NR_DOMAIN_DIMENSIONS > 0);
+  if (NR_DOMAIN_DIMENSIONS <= 0) {
+    return BMI_FAILURE;
+  }
   *rank = NR_DOMAIN_DIMENSIONS;
   return BMI_SUCCESS;
 }
@@ -76,7 +77,9 @@ static int Get_grid_size(struct Bmi *self, int grid, int *size) {
   }
   *size = 1;
   for (int i = 0; i < NR_DOMAIN_DIMENSIONS; i++) {
-    assert(DomainShape[i] > 0);
+    if (DomainShape[i] <= 0) {
+      return BMI_FAILURE;
+    }
     *size *= DomainShape[i];
   }
   return BMI_SUCCESS;
@@ -95,7 +98,9 @@ static int Get_grid_shape(struct Bmi *self, int grid, int *shape) {
     return BMI_FAILURE;
   }
   for (int i = 0; i < NR_DOMAIN_DIMENSIONS; i++) {
-    assert(DomainShape[i] > 0);
+    if (DomainShape[i] <= 0) {
+      return BMI_FAILURE;
+    }
     shape[i] = DomainShape[i];
   }
   return BMI_SUCCESS;
@@ -105,7 +110,9 @@ static int Get_grid_spacing(struct Bmi *self, int grid, double *spacing) {
   if (grid != GRID_ID) {
     return BMI_FAILURE;
   }
-  assert(Resolution > 0);
+  if (Resolution <= 0) {
+    return BMI_FAILURE;
+  }
   for (int i = 0; i < NR_DOMAIN_DIMENSIONS; i++) {
     spacing[i] = Resolution;
   }
@@ -116,9 +123,9 @@ static int Get_grid_origin(struct Bmi *self, int grid, double *origin) {
   if (grid != GRID_ID) {
     return BMI_FAILURE;
   }
-  assert(NR_DOMAIN_DIMENSIONS == 2);
-  assert(Latitudes != NULL);
-  assert(Longitudes != NULL);
+  if (NR_DOMAIN_DIMENSIONS != 2 || Latitudes == NULL || Longitudes == NULL) {
+    return BMI_FAILURE;
+  }
   origin[0] = Latitudes[0];
   origin[1] = Longitudes[0];
   return BMI_SUCCESS;
@@ -207,7 +214,9 @@ static int Get_time_units(struct Bmi *self, char *units) {
 }
 static int Get_time_step(struct Bmi *self, double *time_step) {
   UNUSED(self);
-  assert(TIME_STEP > 0);
+  if (TIME_STEP <= 0) {
+    return BMI_FAILURE;
+  }
   *time_step = TIME_STEP;
   return BMI_SUCCESS;
 }

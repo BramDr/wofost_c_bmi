@@ -11,6 +11,7 @@
 #define WEATHER_FILE_OPTION "WEATHER_FILE"
 
 #define CROP_NAME_OPTION "CROP_NAME"
+#define PLANT_DATE_OPTION "PLANT_DATE"
 #define EMERGENCE_OPTION "EMERGENCE"
 #define CROP_FILE_OPTION "CROP_FILE"
 #define MANAGEMENT_FILE_OPTION "MANAGEMENT_FILE"
@@ -69,8 +70,8 @@ enum {
 
 static const char WEATHER_VARIABLES[WEATHER_NTYPES][MAX_STRING] = {
     "TMIN", "TMAX", "RADIATION", "RAIN", "WINDSPEED", "VAPOUR"};
-static const char DOMAIN_VARIABLES[DOMAIN_NTYPES][MAX_STRING] = {"MASK", "PLANT_DATE",
-                                                          "TSUM1", "TSUM2"};
+static const char DOMAIN_VARIABLES[DOMAIN_NTYPES][MAX_STRING] = {
+    "MASK", "PLANT_DATE", "TSUM1", "TSUM2"};
 static const char OUTPUT_VARIABLES[OUTPUT_NTYPES][MAX_STRING] = {
     "GROWTH_DAY",        "DEVELOPMENT",       "ROOT_BIOMASS",
     "LEAVES_BIOMASS",    "STEMS_BIOMASS",     "STORAGE_BIOMASS",
@@ -91,6 +92,7 @@ typedef struct NETCDFCONFIG {
 } NetCDFConfig;
 
 typedef struct CROPCONFIG {
+  int plant_date;
   int emergence;
   char crop_name[MAX_STRING];
   char crop_file[MAX_STRING];

@@ -1,6 +1,8 @@
 #include "simulation.h"
 
 void FinalizeSimulation(void) {
+  DBG("FinalizeSimulation");
+
   FinalizeSimulationUnits();
   FinalizeDomainUnits();
   FinalizeMeteo();

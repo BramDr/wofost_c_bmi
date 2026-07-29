@@ -2,6 +2,7 @@
 #include "time_utils.h"
 
 void InitializeSimulation(const char *config_file) {
+  DBG("InitializeSimulation");
 
   Configuration = malloc(sizeof(Config));
 
@@ -12,7 +13,6 @@ void InitializeSimulation(const char *config_file) {
 
   InitializeDomainUnits();
   InitializeSimulationUnits();
-
   if (Standalone)
     InitializeMeteo();
 

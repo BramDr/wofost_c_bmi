@@ -11,12 +11,17 @@
 #define INT_TYPE "int"
 
 #define UNUSED(x) (void)(x)
-#define ERR(m)                                                                 \
-  {                                                                            \
-    m;                                                                         \
-    fprintf(stderr, "\n");                                                     \
+#define ERR(fmt, ...)                                                          \
+  do {                                                                         \
+    fprintf(stderr, "[ERR] " fmt "\n", ##__VA_ARGS__);                         \
     exit(EXIT_FAILURE);                                                        \
-  }
+  } while (0)
+
+#if defined(DEBUG) && !defined(NDEBUG)
+#define DBG(fmt, ...) fprintf(stderr, "[DBG] " fmt "\n", ##__VA_ARGS__)
+#else
+#define DBG(...) ((void)0)
+#endif
 
 typedef struct TBL {
   float x;
