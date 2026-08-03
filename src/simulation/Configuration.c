@@ -143,6 +143,8 @@ static void ReadWeatherConfiguration(FILE *fp, Config *config) {
     if (j == WEATHER_NTYPES)
       ERR("Unknown weather type in config file: %s", type);
 
+    DBG("Reading weather configuration for type: %s", type);
+
     NetCDFConfig *netcdf_config = &config->weather_files[j];
     if (strlen(netcdf_config->file_path) != 0)
       ERR("Duplicate weather file line for type %s in config file: %s",
@@ -164,45 +166,21 @@ static void ReadWeatherConfiguration(FILE *fp, Config *config) {
 }
 
 static void ReadCropConfiguration(FILE *fp, CropConfig *config) {
+  DBG("ReadCropConfiguration");
+
   char line[MAX_STRING], option[MAX_STRING], type[MAX_STRING];
   int used, used2;
 
-  // Clear
-  config->plant_date = -1;
-  config->emergence = -1;
-  memset(config->crop_name, 0, MAX_STRING);
-  memset(config->crop_file, 0, MAX_STRING);
-  memset(config->management_file, 0, MAX_STRING);
-  memset(config->soil_file, 0, MAX_STRING);
-  memset(config->site_file, 0, MAX_STRING);
-  for (int i = 0; i < DOMAIN_NTYPES; i++) {
-    memset(&config->domain_files[i], 0, sizeof(NetCDFConfig));
-  }
-
-  bool found = false;
   while (fgets(line, sizeof(line), fp)) {
-    char *trimmed = trim(line, strnlen(line, MAX_STRING));
+    size_t raw_len = strnlen(line, MAX_STRING);
+    char *trimmed = trim(line, raw_len);
     if (skip_comment(trimmed))
       continue;
 
     if (sscanf(trimmed, "%s %n", option, &used) != 1)
       ERR("Invalid line in config file: %s", trimmed);
 
-    if (!found && strcmp(option, CROP_NAME_OPTION) != 0)
-      continue;
-
-    if (strcmp(option, CROP_NAME_OPTION) == 0) {
-      if (found) {
-        fseek(fp, -strlen(line), SEEK_CUR);
-        break; // Stop reading if we already found a crop name
-      }
-      found = true;
-
-      if (strlen(config->crop_name) != 0)
-        ERR("Duplicate %s line in config file: %s", CROP_NAME_OPTION, trimmed);
-      if (sscanf(trimmed + used, "%s", config->crop_name) != 1)
-        ERR("Invalid %s line in config file: %s", CROP_NAME_OPTION, trimmed);
-    } else if (strcmp(option, PLANT_DATE_OPTION) == 0) {
+    if (strcmp(option, PLANT_DATE_OPTION) == 0) {
       if (config->plant_date != -1)
         ERR("Duplicate %s line in config file: %s", PLANT_DATE_OPTION, trimmed);
       if (sscanf(trimmed + used, "%d", &config->plant_date) != 1)
@@ -243,10 +221,8 @@ static void ReadCropConfiguration(FILE *fp, CropConfig *config) {
       if (sscanf(trimmed + used, "%s", config->site_file) != 1)
         ERR("Invalid %s line in config file: %s", SITE_FILE_OPTION, trimmed);
     } else if (strcmp(option, DOMAIN_FILE_OPTION) == 0) {
-
       if (sscanf(trimmed + used, "%s %n", type, &used2) != 1)
         ERR("Invalid %s line in config file: %s", DOMAIN_FILE_OPTION, trimmed);
-
       size_t j;
       for (j = 0; j < DOMAIN_NTYPES; j++) {
         if (strcmp(type, DOMAIN_VARIABLES[j]) == 0)
@@ -254,7 +230,6 @@ static void ReadCropConfiguration(FILE *fp, CropConfig *config) {
       }
       if (j == DOMAIN_NTYPES)
         ERR("Unknown domain type in config file: %s", type);
-
       NetCDFConfig *netcdf_config = &config->domain_files[j];
       if (strlen(netcdf_config->file_path) != 0)
         ERR("Duplicate domain file line for type %s in config file: %s\n", type,
@@ -262,34 +237,22 @@ static void ReadCropConfiguration(FILE *fp, CropConfig *config) {
       if (sscanf(trimmed + used + used2, "%s %s", netcdf_config->file_path,
                  netcdf_config->variable_name) != 2)
         ERR("Invalid %s line in config file: %s", DOMAIN_FILE_OPTION, trimmed);
+    } else if (strcmp(option, OUTPUT_VAR_OPTION) == 0) {
+      if (sscanf(trimmed + used, "%s", type) != 1)
+        ERR("Invalid %s line in config file: %s", OUTPUT_VAR_OPTION, trimmed);
+      size_t j;
+      for (j = 0; j < OUTPUT_NTYPES; j++) {
+        if (strcmp(type, OUTPUT_VARIABLES[j]) == 0)
+          break;
+      }
+      if (j == OUTPUT_NTYPES)
+        ERR("Unknown output variable in config file: %s", type);
+      if (config->output_types[j])
+        ERR("Duplicate %s line in config file: %s", OUTPUT_VAR_OPTION, trimmed);
+      config->output_types[j] = true;
     } else {
-      ERR("Unknown option in crop configuration: %s", option);
-    }
-  }
-
-  if (!found)
-    ERR("No crop configuration found in config file.");
-
-  // Validate
-  if (strlen(config->crop_name) == 0)
-    ERR("Crop name must be specified in the crop configuration.");
-  if (config->plant_date == -1)
-    ERR("Plant date must be specified in the crop configuration.");
-  if (config->emergence == -1)
-    ERR("Emergence must be specified in the crop configuration.");
-  if (strlen(config->crop_file) == 0)
-    ERR("Crop file must be specified in the crop configuration.");
-  if (strlen(config->management_file) == 0)
-    ERR("Management file must be specified in the crop configuration.");
-  if (strlen(config->soil_file) == 0)
-    ERR("Soil file must be specified in the crop configuration.");
-  if (strlen(config->site_file) == 0)
-    ERR("Site file must be specified in the crop configuration.");
-  for (int i = 0; i < DOMAIN_NTYPES; i++) {
-    if (strlen(config->domain_files[i].file_path) == 0) {
-      ERR("Domain file for type %s is not specified in the crop "
-          "configuration.\n",
-          DOMAIN_VARIABLES[i]);
+      fseek(fp, -(long)raw_len, SEEK_CUR);
+      break;
     }
   }
 }
@@ -320,29 +283,103 @@ static void ReadCropsConfiguration(FILE *fp, Config *config) {
       continue;
     config->CropSize++;
   }
-
   if (config->CropSize == 0)
     ERR("No crop configurations found in config file.");
-
   config->crop_configurations = malloc(config->CropSize * sizeof(CropConfig));
   if (config->crop_configurations == NULL)
     ERR("Cannot allocate memory for crop configurations.");
 
-  // Read
-  rewind(fp);
+  // Clear
   for (size_t i = 0; i < config->CropSize; i++) {
     CropConfig *crop_config = &config->crop_configurations[i];
+    crop_config->plant_date = -1;
+    crop_config->emergence = -1;
+    memset(crop_config->crop_name, 0, MAX_STRING);
+    memset(crop_config->crop_file, 0, MAX_STRING);
+    memset(crop_config->management_file, 0, MAX_STRING);
+    memset(crop_config->soil_file, 0, MAX_STRING);
+    memset(crop_config->site_file, 0, MAX_STRING);
+    for (int j = 0; j < DOMAIN_NTYPES; j++) {
+      memset(&crop_config->domain_files[j], 0, sizeof(NetCDFConfig));
+    }
+    for (int j = 0; j < OUTPUT_NTYPES; j++) {
+      crop_config->output_types[j] = false;
+    }
+  }
+
+  // Read
+  rewind(fp);
+  size_t crop_index = 0;
+  while (fgets(line, sizeof(line), fp)) {
+    char *trimmed = trim(line, strnlen(line, MAX_STRING));
+    if (skip_comment(trimmed))
+      continue;
+
+    if (sscanf(trimmed, "%s %n", option, &used) != 1)
+      ERR("Invalid line in config file: %s", trimmed);
+
+    if (strcmp(option, CROP_NAME_OPTION) != 0)
+      continue;
+    if (crop_index >= config->CropSize)
+      ERR("More crop configurations found than expected in config file.");
+
+    CropConfig *crop_config = &config->crop_configurations[crop_index];
+    if (sscanf(trimmed + used, "%s", crop_config->crop_name) != 1)
+      ERR("Invalid %s line in config file: %s", CROP_NAME_OPTION, trimmed);
+
+    DBG("Reading crop configuration for crop: %s", crop_config->crop_name);
+
     ReadCropConfiguration(fp, crop_config);
+    crop_index++;
   }
 
   // Validate
   for (size_t i = 0; i < config->CropSize; i++) {
-    CropConfig *crop_config_i = &config->crop_configurations[i];
+    CropConfig *crop_config = &config->crop_configurations[i];
+    if (strlen(crop_config->crop_name) == 0)
+      ERR("Crop name must be specified in the crop configuration.");
+    if (crop_config->plant_date == -1)
+      ERR("Plant date must be specified in the crop configuration for crop %s.",
+          crop_config->crop_name);
+    if (crop_config->emergence == -1)
+      ERR("Emergence must be specified in the crop configuration for crop %s.",
+          crop_config->crop_name);
+    if (strlen(crop_config->crop_file) == 0)
+      ERR("Crop file must be specified in the crop configuration for crop %s.",
+          crop_config->crop_name);
+    if (strlen(crop_config->management_file) == 0)
+      ERR("Management file must be specified in the crop configuration for "
+          "crop %s.",
+          crop_config->crop_name);
+    if (strlen(crop_config->soil_file) == 0)
+      ERR("Soil file must be specified in the crop configuration for crop %s.",
+          crop_config->crop_name);
+    if (strlen(crop_config->site_file) == 0)
+      ERR("Site file must be specified in the crop configuration for crop %s.",
+          crop_config->crop_name);
+    for (int i = 0; i < DOMAIN_NTYPES; i++) {
+      if (strlen(crop_config->domain_files[i].file_path) == 0) {
+        ERR("Domain file for type %s is not specified in the crop "
+            "configuration for crop %s.\n",
+            DOMAIN_VARIABLES[i], crop_config->crop_name);
+      }
+    }
+    bool has_output_type = false;
+    for (int i = 0; i < OUTPUT_NTYPES; i++) {
+      if (crop_config->output_types[i]) {
+        has_output_type = true;
+        break;
+      }
+    }
+    if (!has_output_type) {
+      WARN("No output types specified in the crop configuration for crop %s",
+           crop_config->crop_name);
+    }
     for (size_t j = i + 1; j < config->CropSize; j++) {
-      CropConfig *crop_config_j = &config->crop_configurations[j];
-      if (strcmp(crop_config_i->crop_name, crop_config_j->crop_name) == 0) {
+      CropConfig *crop_config_other = &config->crop_configurations[j];
+      if (strcmp(crop_config->crop_name, crop_config_other->crop_name) == 0) {
         ERR("Duplicate crop name found in crop configurations: %s",
-            crop_config_i->crop_name);
+            crop_config->crop_name);
       }
     }
   }

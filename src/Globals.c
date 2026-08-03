@@ -5,6 +5,8 @@
 
 Config *Configuration;
 NetCDFMeta WeatherMetas[WEATHER_NTYPES];
+size_t *OutputSizes;
+size_t **OutputTypes;
 NetCDFMeta **OutputMetas;
 
 struct tm Start;

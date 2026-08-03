@@ -4,9 +4,10 @@
 #include <netcdf.h>
 #include <string.h>
 
-static void InitializeOutputData(const size_t domain_size,
-                                 const size_t crop_size, NetCDFMeta ***metas,
-                                 float **float_data, int **int_data) {
+static void InitializeOutputData(const Config *config, const size_t domain_size,
+                                 const size_t crop_size, size_t *sizes[],
+                                 size_t **types[], NetCDFMeta **metas[],
+                                 float *float_data[], int *int_data[]) {
   DBG("InitializeOutputData");
 
   *float_data = malloc(domain_size * sizeof(**float_data));
@@ -17,14 +18,39 @@ static void InitializeOutputData(const size_t domain_size,
   if (*int_data == NULL)
     ERR("Could not allocate memory for output int data.");
 
+  *sizes = malloc(crop_size * sizeof(**sizes));
+  if (*sizes == NULL)
+    ERR("Could not allocate memory for output sizes.");
+
+  *types = malloc(crop_size * sizeof(**types));
+  if (*types == NULL)
+    ERR("Could not allocate memory for output types.");
+
   *metas = malloc(crop_size * sizeof(**metas));
   if (*metas == NULL)
     ERR("Could not allocate memory for output metadata.");
 
   for (size_t i = 0; i < crop_size; i++) {
-    (*metas)[i] = malloc(OUTPUT_NTYPES * sizeof(*(*metas)[i]));
-    if ((*metas)[i] == NULL)
+    (*sizes)[i] = 0;
+    for (size_t j = 0; j < OUTPUT_NTYPES; j++) {
+      if (config->crop_configurations[i].output_types[j]) {
+        (*sizes)[i]++;
+      }
+    }
+  }
+
+  for (size_t i = 0; i < crop_size; i++) {
+    (*metas)[i] = malloc((*sizes)[i] * sizeof(*(*metas)[i]));
+    if ((*metas)[i] == NULL && (*sizes)[i] > 0)
       ERR("Could not allocate memory for output metadata for crop %zu.", i);
+    (*types)[i] = malloc((*sizes)[i] * sizeof(*(*types)[i]));
+    if ((*types)[i] == NULL && (*sizes)[i] > 0)
+      ERR("Could not allocate memory for output types for crop %zu.", i);
+    for (size_t j = 0, k = 0; j < OUTPUT_NTYPES; j++) {
+      if (config->crop_configurations[i].output_types[j]) {
+        (*types)[i][k++] = j;
+      }
+    }
   }
 }
 
@@ -52,7 +78,10 @@ static void DefineVariableAttributes(const int ncid, const int varid,
 static void StartOutput(const Config *configuration,
                         const size_t domain_shape[NR_DOMAIN_DIMENSIONS],
                         const double latitudes[], const double longitudes[],
-                        const size_t crop_size, NetCDFMeta **metas) {
+                        const size_t crop_size, const size_t sizes[],
+                        const size_t *types[],
+                        const OutputVar variables[OUTPUT_NTYPES],
+                        NetCDFMeta *metas[]) {
   DBG("StartOutput");
 
   int status;
@@ -65,10 +94,13 @@ static void StartOutput(const Config *configuration,
     CropConfig *crop_config = &configuration->crop_configurations[i];
     char *crop_name = crop_config->crop_name;
 
-    for (size_t j = 0; j < OUTPUT_NTYPES; j++) {
+    DBG("Creating output files for crop %s", crop_name);
+
+    for (size_t j = 0; j < sizes[i]; j++) {
       NetCDFMeta *meta = &metas[i][j];
 
-      const OutputVar *output_var = &OUTPUT_VARS[j];
+      const size_t type = types[i][j];
+      const OutputVar *output_var = &variables[type];
       const char *var_name = output_var->name;
 
       // Construct the output file path as
@@ -234,16 +266,20 @@ static void WriteOutputIntData(const OutputVar *var, const int data[],
 }
 
 static void WriteOutputData(const size_t domain_size, const size_t crop_size,
-                            const size_t active_size[], size_t *active_index[],
-                            NetCDFMeta **metas, float float_data[],
-                            int int_data[], SimUnit *grid[]) {
+                            const size_t active_size[],
+                            const size_t *active_index[], const SimUnit *grid[],
+                            const size_t sizes[], const size_t *types[],
+                            const OutputVar variables[], NetCDFMeta *metas[],
+                            float float_data[], int int_data[]) {
   DBG("WriteOutputData");
 
   for (size_t i = 0; i < crop_size; i++) {
 
-    for (size_t j = 0; j < OUTPUT_NTYPES; j++) {
+    for (size_t j = 0; j < sizes[i]; j++) {
       NetCDFMeta *meta = &metas[i][j];
-      const OutputVar *output_var = &OUTPUT_VARS[j];
+
+      const size_t type = types[i][j];
+      const OutputVar *output_var = &variables[type];
 
       if (output_var->type == NC_FLOAT) {
         for (size_t k = 0; k < domain_size; k++) {
@@ -259,10 +295,10 @@ static void WriteOutputData(const size_t domain_size, const size_t crop_size,
       }
 
       for (size_t k = 0; k < active_size[i]; k++) {
-        size_t index = active_index[i][k];
-        SimUnit *unit = &grid[i][k];
+        const size_t index = active_index[i][k];
+        const SimUnit *unit = &grid[i][k];
 
-        switch (j) {
+        switch (type) {
         case OUTPUT_GROWTH_DAY:
           int_data[index] = unit->crp.GrowthDay;
           break;
@@ -346,7 +382,7 @@ static void WriteOutputData(const size_t domain_size, const size_t crop_size,
           float_data[index] = unit->crp.K_st.storage;
           break;
         default:
-          ERR("Unknown output variable index %zu.", j);
+          ERR("Unknown output variable index %zu.", type);
         }
       }
 
@@ -359,12 +395,13 @@ static void WriteOutputData(const size_t domain_size, const size_t crop_size,
   }
 }
 
-static void StopOutput(const size_t crop_size, NetCDFMeta **metas) {
+static void StopOutput(const size_t crop_size, const size_t sizes[],
+                       NetCDFMeta *metas[]) {
   DBG("StopOutput");
 
   int status;
   for (size_t i = 0; i < crop_size; i++) {
-    for (size_t j = 0; j < OUTPUT_NTYPES; j++) {
+    for (size_t j = 0; j < sizes[i]; j++) {
       NetCDFMeta *meta = &metas[i][j];
       if ((status = nc_close(meta->ncid)) != NC_NOERR)
         ERR("Cannot close output file %d: %s.", meta->ncid,
@@ -374,40 +411,54 @@ static void StopOutput(const size_t crop_size, NetCDFMeta **metas) {
 }
 
 static void FinalizeOutputData(float *float_data[], int *int_data[],
-                               NetCDFMeta ***metas) {
+                               size_t *sizes[], size_t **types[],
+                               NetCDFMeta **metas[]) {
   DBG("FinalizeOutputData");
 
   free(*float_data);
   free(*int_data);
 
   for (size_t i = 0; i < CropSize; i++) {
+    free((*types)[i]);
     free((*metas)[i]);
+    (*types)[i] = NULL;
     (*metas)[i] = NULL;
   }
+  free(*sizes);
+  free(*types);
   free(*metas);
 
   *float_data = NULL;
   *int_data = NULL;
+  *sizes = NULL;
+  *types = NULL;
   *metas = NULL;
 }
 
 void InitializeOutput(void) {
   DBG("InitializeOutput");
 
-  InitializeOutputData(DomainSize, CropSize, &OutputMetas, &OutputFloatData,
+  InitializeOutputData(Configuration, DomainSize, CropSize, &OutputSizes,
+                       &OutputTypes, &OutputMetas, &OutputFloatData,
                        &OutputIntData);
   StartOutput(Configuration, DomainShape, Latitudes, Longitudes, CropSize,
+              OutputSizes, (const size_t **)OutputTypes, OUTPUT_VARS,
               OutputMetas);
 }
 
 void UpdateOutput(void) {
-  WriteOutputData(DomainSize, CropSize, ActiveSize, ActiveIndex, OutputMetas,
-                  OutputFloatData, OutputIntData, SimGrid);
+  DBG("UpdateOutput");
+
+  WriteOutputData(DomainSize, CropSize, ActiveSize,
+                  (const size_t **)ActiveIndex, (const SimUnit **)SimGrid,
+                  OutputSizes, (const size_t **)OutputTypes, OUTPUT_VARS,
+                  OutputMetas, OutputFloatData, OutputIntData);
 }
 
 void FinalizeOutput(void) {
   DBG("FinalizeOutput");
 
-  StopOutput(CropSize, OutputMetas);
-  FinalizeOutputData(&OutputFloatData, &OutputIntData, &OutputMetas);
+  StopOutput(CropSize, OutputSizes, OutputMetas);
+  FinalizeOutputData(&OutputFloatData, &OutputIntData, &OutputSizes,
+                     &OutputTypes, &OutputMetas);
 }

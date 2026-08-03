@@ -281,7 +281,7 @@ ReadSimulationSpatialData(const Config *config, const size_t domain_size,
                           const size_t domain_shape[NR_DOMAIN_DIMENSIONS],
                           const size_t crop_size, const size_t *active_size,
                           const size_t **active_index, SimUnit **grid) {
-  DBG("ReadSimulationSpatialData %zu", crop_size);
+  DBG("ReadSimulationSpatialData");
 
   for (size_t i = 0; i < crop_size; i++) {
     CropConfig *crop_config = &config->crop_configurations[i];

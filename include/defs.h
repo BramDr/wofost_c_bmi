@@ -16,7 +16,7 @@
     fprintf(stderr, "[ERR] " fmt "\n", ##__VA_ARGS__);                         \
     exit(EXIT_FAILURE);                                                        \
   } while (0)
-
+#define WARN(fmt, ...) fprintf(stderr, "[WARN] " fmt "\n", ##__VA_ARGS__)
 #if defined(DEBUG) && !defined(NDEBUG)
 #define DBG(fmt, ...) fprintf(stderr, "[DBG] " fmt "\n", ##__VA_ARGS__)
 #else

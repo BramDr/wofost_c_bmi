@@ -18,6 +18,7 @@
 #define SOIL_FILE_OPTION "SOIL_FILE"
 #define SITE_FILE_OPTION "SITE_FILE"
 #define DOMAIN_FILE_OPTION "DOMAIN_FILE"
+#define OUTPUT_VAR_OPTION "OUTPUT_TYPE"
 
 enum {
   WEATHER_TMIN,
@@ -100,6 +101,7 @@ typedef struct CROPCONFIG {
   char soil_file[MAX_STRING];
   char site_file[MAX_STRING];
   NetCDFConfig domain_files[DOMAIN_NTYPES];
+  bool output_types[OUTPUT_NTYPES];
 } CropConfig;
 
 typedef struct CONFIG {
@@ -130,6 +132,8 @@ typedef struct NETCDFMETA {
 
 extern Config *Configuration;
 extern NetCDFMeta WeatherMetas[WEATHER_NTYPES];
+extern size_t *OutputSizes;
+extern size_t **OutputTypes;
 extern NetCDFMeta **OutputMetas;
 
 extern char *trim(char *str, size_t len);
