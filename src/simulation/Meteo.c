@@ -4,6 +4,9 @@
 #include <netcdf.h>
 #include <string.h>
 
+/* set decimals */
+#define roundz(x, d) ((floor(((x) * pow(10, d)) + .5)) / pow(10, d))
+
 static void InitializeMeteoData(const Config *config, const size_t size,
                                 const size_t shape[NR_DOMAIN_DIMENSIONS],
                                 float **data) {
