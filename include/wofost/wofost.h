@@ -34,6 +34,8 @@ extern size_t CurrentStep;
 extern DomUnit *DUnit;
 extern SimUnit *SUnit;
 extern bool Standalone;
+extern bool IgnoreNutrientStress;
+extern bool IgnoreSoilMoisture;
 extern float Temp;
 extern float DayTemp;
 

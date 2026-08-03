@@ -9,6 +9,8 @@
 #define BMI_COUPLING_OPTION "BMI_COUPLING"
 #define OUTPUT_DIRECTORY_OPTION "OUTPUT_DIRECTORY"
 #define WEATHER_FILE_OPTION "WEATHER_FILE"
+#define IGNORE_NUTRIENT_STRESS_OPTION "IGNORE_NUTRIENT_STRESS"
+#define IGNORE_SOIL_MOISTURE_OPTION "IGNORE_SOIL_MOISTURE"
 
 #define CROP_NAME_OPTION "CROP_NAME"
 #define PLANT_DATE_OPTION "PLANT_DATE"
@@ -109,6 +111,8 @@ typedef struct CONFIG {
   struct tm End;
   char output_directory[MAX_STRING];
   bool standalone;
+  bool ignore_nutrient_stress;
+  bool ignore_soil_moisture;
   NetCDFConfig weather_files[WEATHER_NTYPES];
   size_t CropSize;
   CropConfig *crop_configurations;

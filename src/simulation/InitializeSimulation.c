@@ -10,6 +10,8 @@ void InitializeSimulation(const char *config_file) {
   Start = Configuration->Start;
   End = Configuration->End;
   Standalone = Configuration->standalone;
+  IgnoreNutrientStress = Configuration->ignore_nutrient_stress;
+  IgnoreSoilMoisture = Configuration->ignore_soil_moisture;
 
   InitializeDomainUnits();
   InitializeSimulationUnits();

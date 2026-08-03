@@ -53,5 +53,7 @@ size_t CurrentStep;
 DomUnit *DUnit;
 SimUnit *SUnit;
 bool Standalone;
+bool IgnoreNutrientStress;
+bool IgnoreSoilMoisture;
 float Temp;
 float DayTemp;

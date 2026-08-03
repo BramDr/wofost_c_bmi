@@ -25,6 +25,8 @@ static void ReadGeneralConfiguration(FILE *fp, Config *config) {
   config->End.tm_mon = -1;
   config->End.tm_mday = -1;
   config->standalone = false;
+  config->ignore_nutrient_stress = false;
+  config->ignore_soil_moisture = false;
 
   // Read
   while (fgets(line, sizeof(line), fp)) {
@@ -61,6 +63,32 @@ static void ReadGeneralConfiguration(FILE *fp, Config *config) {
         config->standalone = false;
       } else {
         ERR("Invalid %s line in config file: %s", BMI_COUPLING_OPTION, trimmed);
+      }
+    } else if (strcmp(option, IGNORE_NUTRIENT_STRESS_OPTION) == 0) {
+      char ignore_type[MAX_STRING];
+      if (sscanf(trimmed + used, "%s", ignore_type) != 1)
+        ERR("Invalid %s line in config file: %s", IGNORE_NUTRIENT_STRESS_OPTION,
+            trimmed);
+      if (strcmp(ignore_type, "TRUE") == 0) {
+        config->ignore_nutrient_stress = true;
+      } else if (strcmp(ignore_type, "FALSE") == 0) {
+        config->ignore_nutrient_stress = false;
+      } else {
+        ERR("Invalid %s line in config file: %s", IGNORE_NUTRIENT_STRESS_OPTION,
+            trimmed);
+      }
+    } else if (strcmp(option, IGNORE_SOIL_MOISTURE_OPTION) == 0) {
+      char ignore_type[MAX_STRING];
+      if (sscanf(trimmed + used, "%s", ignore_type) != 1)
+        ERR("Invalid %s line in config file: %s", IGNORE_SOIL_MOISTURE_OPTION,
+            trimmed);
+      if (strcmp(ignore_type, "TRUE") == 0) {
+        config->ignore_soil_moisture = true;
+      } else if (strcmp(ignore_type, "FALSE") == 0) {
+        config->ignore_soil_moisture = false;
+      } else {
+        ERR("Invalid %s line in config file: %s", IGNORE_SOIL_MOISTURE_OPTION,
+            trimmed);
       }
     }
   }

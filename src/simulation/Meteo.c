@@ -186,22 +186,28 @@ static void ReadMeteo(const size_t size,
 
       switch (i) {
       case WEATHER_TMIN:
-        met->Tmin = element;
+        // Convert from Kelvin to Celsius and round to 1 decimal place
+        met->Tmin = roundz(element - 273.15, 1);
         break;
       case WEATHER_TMAX:
-        met->Tmax = element;
+        // Convert from Kelvin to Celsius and round to 1 decimal place
+        met->Tmax = roundz(element - 273.15, 1);
         break;
       case WEATHER_RADIATION:
-        met->Radiation = element;
+        // Convert from W/m² to MJ/m²/day and round to 1 decimal place
+        met->Radiation = 1000 * roundz(86.400 * element, 1);
         break;
       case WEATHER_RAIN:
-        met->Rain = element;
+        // Convert from kg m⁻² s⁻¹ to cm/day and round to 2 decimal places
+        met->Rain = roundz(8640 * element, 2);
         break;
       case WEATHER_WINDSPEED:
-        met->Windspeed = element;
+        // As m/s and round to 1 decimal place
+        met->Windspeed = roundz(element, 1);
         break;
       case WEATHER_VAPOUR:
-        met->Vapour = element;
+        // As hPa and round to 1 decimal place
+        met->Vapour = roundz(element, 1);
         break;
       default:
         ERR("Unknown weather variable type %zu.", i);
