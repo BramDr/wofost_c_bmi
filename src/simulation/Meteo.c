@@ -6,6 +6,8 @@
 
 /* set decimals */
 #define roundz(x, d) ((floor(((x) * pow(10, d)) + .5)) / pow(10, d))
+#define roundz1(x) ((floor(((x) * 10) + .5)) / 10)
+#define roundz2(x) ((floor(((x) * 100) + .5)) / 100)
 
 static void InitializeMeteoData(const size_t size, float **data) {
 
@@ -52,10 +54,10 @@ static void ReadMeteo(const size_t size, const NetCDFMeta metas[WEATHER_NTYPES],
       case WEATHER_TMIN:
         switch (var_unit) {
         case UNIT_CELSIUS:
-          met->Tmin = roundz(element, 1);
+          met->Tmin = roundz1(element);
           break;
         case UNIT_KELVIN:
-          met->Tmin = roundz(element - 273.15, 1);
+          met->Tmin = roundz1(element - 273.15);
           break;
         default:
           ERR("Unknown weather variable unit %zu for TMIN.", var_unit);
@@ -64,10 +66,10 @@ static void ReadMeteo(const size_t size, const NetCDFMeta metas[WEATHER_NTYPES],
       case WEATHER_TMAX:
         switch (var_unit) {
         case UNIT_CELSIUS:
-          met->Tmax = roundz(element, 1);
+          met->Tmax = roundz1(element);
           break;
         case UNIT_KELVIN:
-          met->Tmax = roundz(element - 273.15, 1);
+          met->Tmax = roundz1(element - 273.15);
           break;
         default:
           ERR("Unknown weather variable unit %zu for TMAX.", var_unit);
@@ -76,11 +78,11 @@ static void ReadMeteo(const size_t size, const NetCDFMeta metas[WEATHER_NTYPES],
       case WEATHER_RADIATION:
         switch (var_unit) {
         case UNIT_J_PER_M2_PER_DAY:
-          met->Radiation = roundz(element, 1);
+          met->Radiation = roundz1(element);
           break;
         case UNIT_J_PER_M2_PER_S:
         case UNIT_W_PER_M2:
-          met->Radiation = roundz(86400 * element, 1);
+          met->Radiation = roundz1(86400 * element);
           break;
         default:
           ERR("Unknown weather variable unit %zu for RADIATION.", var_unit);
@@ -89,14 +91,14 @@ static void ReadMeteo(const size_t size, const NetCDFMeta metas[WEATHER_NTYPES],
       case WEATHER_RAIN:
         switch (var_unit) {
         case UNIT_CM_PER_DAY:
-          met->Rain = roundz(element, 2);
+          met->Rain = roundz2(element);
           break;
         case UNIT_MM_PER_S:
         case UNIT_KG_PER_M2_PER_S:
-          met->Rain = roundz(0.1 * 86400 * element, 2);
+          met->Rain = roundz2(0.1 * 86400 * element);
           break;
         case UNIT_M_PER_DAY:
-          met->Rain = roundz(100 * element, 2);
+          met->Rain = roundz2(100 * element);
           break;
         default:
           ERR("Unknown weather variable unit %zu for RAIN.", var_unit);
@@ -105,7 +107,7 @@ static void ReadMeteo(const size_t size, const NetCDFMeta metas[WEATHER_NTYPES],
       case WEATHER_WINDSPEED:
         switch (var_unit) {
         case UNIT_M_PER_S:
-          met->Windspeed = roundz(element, 1);
+          met->Windspeed = roundz1(element);
           break;
         default:
           ERR("Unknown weather variable unit %zu for WINDSPEED.", var_unit);
@@ -114,10 +116,10 @@ static void ReadMeteo(const size_t size, const NetCDFMeta metas[WEATHER_NTYPES],
       case WEATHER_VAPOUR:
         switch (var_unit) {
         case UNIT_HPA:
-          met->Vapour = roundz(element, 1);
+          met->Vapour = roundz1(element);
           break;
         case UNIT_KPA:
-          met->Vapour = roundz(10 * element, 1);
+          met->Vapour = roundz1(10 * element);
           break;
         default:
           ERR("Unknown weather variable unit %zu for VAPOUR.", var_unit);

@@ -181,6 +181,11 @@ static void StartOutput(const Config *configuration,
       DefineVariableAttributes(meta->ncid, meta->varid, output_var->units,
                                output_var->standard_name,
                                output_var->long_name);
+      size_t chunksizes[3] = {1, meta->lat_len, meta->lon_len};
+      if ((status = nc_def_var_chunking(meta->ncid, meta->varid, NC_CHUNKED,
+                                        chunksizes)) != NC_NOERR)
+        ERR("Cannot define chunking for variable %s in file %s: %s.",
+            output_var->name, output_file, nc_strerror(status));
 
       if (output_var->type == NC_FLOAT) {
         float fill_value = NC_FILL_FLOAT;
