@@ -79,9 +79,7 @@ static void StartOutput(const Config *configuration,
                         const size_t domain_shape[NR_DOMAIN_DIMENSIONS],
                         const double latitudes[], const double longitudes[],
                         const size_t crop_size, const size_t sizes[],
-                        const size_t *types[],
-                        const OutputVar variables[OUTPUT_NTYPES],
-                        NetCDFMeta *metas[]) {
+                        const size_t *types[], NetCDFMeta *metas[]) {
   DBG("StartOutput");
 
   int status;
@@ -100,7 +98,7 @@ static void StartOutput(const Config *configuration,
       NetCDFMeta *meta = &metas[i][j];
 
       const size_t type = types[i][j];
-      const OutputVar *output_var = &variables[type];
+      const OutputVar *output_var = &OUTPUT_VARS[type];
       const char *var_name = output_var->name;
 
       // Construct the output file path as
@@ -269,8 +267,8 @@ static void WriteOutputData(const size_t domain_size, const size_t crop_size,
                             const size_t active_size[],
                             const size_t *active_index[], const SimUnit *grid[],
                             const size_t sizes[], const size_t *types[],
-                            const OutputVar variables[], NetCDFMeta *metas[],
-                            float float_data[], int int_data[]) {
+                            NetCDFMeta *metas[], float float_data[],
+                            int int_data[]) {
   DBG("WriteOutputData");
 
   for (size_t i = 0; i < crop_size; i++) {
@@ -279,7 +277,7 @@ static void WriteOutputData(const size_t domain_size, const size_t crop_size,
       NetCDFMeta *meta = &metas[i][j];
 
       const size_t type = types[i][j];
-      const OutputVar *output_var = &variables[type];
+      const OutputVar *output_var = &OUTPUT_VARS[type];
 
       if (output_var->type == NC_FLOAT) {
         for (size_t k = 0; k < domain_size; k++) {
@@ -442,8 +440,7 @@ void InitializeOutput(void) {
                        &OutputTypes, &OutputMetas, &OutputFloatData,
                        &OutputIntData);
   StartOutput(Configuration, DomainShape, Latitudes, Longitudes, CropSize,
-              OutputSizes, (const size_t **)OutputTypes, OUTPUT_VARS,
-              OutputMetas);
+              OutputSizes, (const size_t **)OutputTypes, OutputMetas);
 }
 
 void UpdateOutput(void) {
@@ -451,8 +448,8 @@ void UpdateOutput(void) {
 
   WriteOutputData(DomainSize, CropSize, ActiveSize,
                   (const size_t **)ActiveIndex, (const SimUnit **)SimGrid,
-                  OutputSizes, (const size_t **)OutputTypes, OUTPUT_VARS,
-                  OutputMetas, OutputFloatData, OutputIntData);
+                  OutputSizes, (const size_t **)OutputTypes, OutputMetas,
+                  OutputFloatData, OutputIntData);
 }
 
 void FinalizeOutput(void) {

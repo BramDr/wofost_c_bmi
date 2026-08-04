@@ -7,6 +7,7 @@
 #define START_DATE_OPTION "START_DATE"
 #define END_DATE_OPTION "END_DATE"
 #define BMI_COUPLING_OPTION "BMI_COUPLING"
+#define AREA_FILE_OPTION "AREA_FILE"
 #define OUTPUT_DIRECTORY_OPTION "OUTPUT_DIRECTORY"
 #define WEATHER_FILE_OPTION "WEATHER_FILE"
 #define IGNORE_NUTRIENT_STRESS_OPTION "IGNORE_NUTRIENT_STRESS"
@@ -30,6 +31,27 @@ enum {
   WEATHER_WINDSPEED,
   WEATHER_VAPOUR,
   WEATHER_NTYPES
+};
+
+enum {
+  // Temperature
+  UNIT_KELVIN,
+  UNIT_CELSIUS,
+  // Energy
+  UNIT_J_PER_M2_PER_DAY,
+  UNIT_J_PER_M2_PER_S,
+  UNIT_W_PER_M2,
+  // Mass
+  UNIT_MM_PER_S,
+  UNIT_KG_PER_M2_PER_S,
+  UNIT_CM_PER_DAY,
+  UNIT_M_PER_DAY,
+  // Speed
+  UNIT_M_PER_S,
+  // Pressure
+  UNIT_KPA,
+  UNIT_HPA,
+  UNIT_NTYPES
 };
 
 enum {
@@ -73,6 +95,11 @@ enum {
 
 static const char WEATHER_VARIABLES[WEATHER_NTYPES][MAX_STRING] = {
     "TMIN", "TMAX", "RADIATION", "RAIN", "WINDSPEED", "VAPOUR"};
+static const char VARIABLE_UNITS[UNIT_NTYPES][MAX_STRING] = {
+    "KELVIN",          "CELSIUS",    "J_PER_M2_PER_DAY",
+    "J_PER_M2_PER_S",  "W_PER_M2",   "MM_PER_S",
+    "KG_PER_M2_PER_S", "CM_PER_DAY", "M_PER_DAY",
+    "M_PER_S",         "KPA",        "HPA"};
 static const char DOMAIN_VARIABLES[DOMAIN_NTYPES][MAX_STRING] = {
     "MASK", "PLANT_DATE", "TSUM1", "TSUM2"};
 static const char OUTPUT_VARIABLES[OUTPUT_NTYPES][MAX_STRING] = {
@@ -113,28 +140,45 @@ typedef struct CONFIG {
   bool standalone;
   bool ignore_nutrient_stress;
   bool ignore_soil_moisture;
+  NetCDFConfig area_file;
   NetCDFConfig weather_files[WEATHER_NTYPES];
+  size_t weather_units[WEATHER_NTYPES];
   size_t CropSize;
   CropConfig *crop_configurations;
 } Config;
 
 typedef struct NETCDFMETA {
+  char *path;
   int ncid;
-  int time_dimid;
+
   int lat_dimid;
-  int lon_dimid;
-  size_t time_len;
-  int time_varid;
   size_t lat_len;
   int lat_varid;
+  double *lat;
+  size_t lat_start;
+  size_t lat_count;
+
+  int lon_dimid;
   size_t lon_len;
   int lon_varid;
-  char time_unit[MAX_STRING];
+  double *lon;
+  size_t lon_start;
+  size_t lon_count;
+
+  int time_dimid;
+  size_t time_len;
+  int time_varid;
   time_t *time;
+  size_t time_start;
+  size_t time_count;
+
   int varid;
+  size_t var_unit;
+
 } NetCDFMeta;
 
 extern Config *Configuration;
+extern NetCDFMeta AreaMeta;
 extern NetCDFMeta WeatherMetas[WEATHER_NTYPES];
 extern size_t *OutputSizes;
 extern size_t **OutputTypes;

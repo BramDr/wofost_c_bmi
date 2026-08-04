@@ -39,8 +39,7 @@ void UpdateWofost(void) {
       RatesToZero();
 
       /* Rate calculations */
-      if (Standalone)
-        RateCalulationWatBal();
+      RateCalulationWatBal();
       Partioning();
       RateCalcultionNutrients();
       RateCalculationCrop();
@@ -50,8 +49,7 @@ void UpdateWofost(void) {
 
       /* State calculations */
       IntegrationCrop();
-      if (Standalone)
-        IntegrationWatBal();
+      IntegrationWatBal();
       IntegrationNutrients();
 
       /* Update the number of days that the crop has grown*/

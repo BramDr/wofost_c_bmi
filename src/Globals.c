@@ -4,6 +4,7 @@
 #include "wofost.h"
 
 Config *Configuration;
+NetCDFMeta AreaMeta;
 NetCDFMeta WeatherMetas[WEATHER_NTYPES];
 size_t *OutputSizes;
 size_t **OutputTypes;
@@ -17,6 +18,7 @@ size_t DomainShape[NR_DOMAIN_DIMENSIONS];
 double *Latitudes;
 double *Longitudes;
 double Resolution;
+double West, East, North, South;
 
 size_t CropSize;
 size_t *ActiveSize;

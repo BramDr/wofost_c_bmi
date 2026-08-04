@@ -137,15 +137,50 @@ static void ReadOutputConfiguration(FILE *fp, Config *config) {
     ERR("%s must be specified in the configuration.", OUTPUT_DIRECTORY_OPTION);
 }
 
+static void ReadAreaConfiguration(FILE *fp, Config *config) {
+  DBG("ReadAreaConfiguration");
+
+  char line[MAX_STRING], option[MAX_STRING];
+  int used;
+
+  // Clear
+  memset(&config->area_file, 0, sizeof(NetCDFConfig));
+
+  // Read
+  while (fgets(line, sizeof(line), fp)) {
+    char *trimmed = trim(line, strnlen(line, MAX_STRING));
+    if (skip_comment(trimmed))
+      continue;
+
+    if (sscanf(trimmed, "%s %n", option, &used) != 1)
+      ERR("Invalid line in config file: %s", trimmed);
+
+    if (strcmp(option, AREA_FILE_OPTION) == 0) {
+      NetCDFConfig *netcdf_config = &config->area_file;
+      if (strlen(netcdf_config->file_path) != 0)
+        ERR("Duplicate %s line in config file: %s", AREA_FILE_OPTION, trimmed);
+      if (sscanf(trimmed + used, "%s %s", netcdf_config->file_path,
+                 netcdf_config->variable_name) != 2)
+        ERR("Invalid %s line in config file: %s", AREA_FILE_OPTION, trimmed);
+    }
+  }
+
+  // Validate
+  if (strlen(config->area_file.file_path) == 0)
+    ERR("%s must be specified in the configuration.", AREA_FILE_OPTION);
+}
+
 static void ReadWeatherConfiguration(FILE *fp, Config *config) {
   DBG("ReadWeatherConfiguration");
 
-  char line[MAX_STRING], option[MAX_STRING], type[MAX_STRING];
+  char line[MAX_STRING], option[MAX_STRING], type[MAX_STRING],
+      units[MAX_STRING];
   int used, used2;
 
   // Clear
   for (int i = 0; i < WEATHER_NTYPES; i++) {
     memset(&config->weather_files[i], 0, sizeof(NetCDFConfig));
+    config->weather_units[i] = UNIT_NTYPES;
   }
 
   // Read
@@ -157,37 +192,42 @@ static void ReadWeatherConfiguration(FILE *fp, Config *config) {
     if (sscanf(trimmed, "%s %n", option, &used) != 1)
       ERR("Invalid line in config file: %s", trimmed);
 
-    if (strcmp(option, WEATHER_FILE_OPTION) != 0)
-      continue;
-
-    if (sscanf(trimmed + used, "%s %n", type, &used2) != 1)
-      ERR("Invalid weather file line in config file: %s", trimmed);
-
-    size_t j;
-    for (j = 0; j < WEATHER_NTYPES; j++) {
-      if (strcmp(type, WEATHER_VARIABLES[j]) == 0)
-        break;
+    if (strcmp(option, WEATHER_FILE_OPTION) == 0) {
+      if (sscanf(trimmed + used, "%s %n", type, &used2) != 1)
+        ERR("Invalid weather file line in config file: %s", trimmed);
+      size_t j;
+      for (j = 0; j < WEATHER_NTYPES; j++) {
+        if (strcmp(type, WEATHER_VARIABLES[j]) == 0)
+          break;
+      }
+      if (j == WEATHER_NTYPES)
+        ERR("Unknown weather type in config file: %s", type);
+      NetCDFConfig *netcdf_config = &config->weather_files[j];
+      if (strlen(netcdf_config->file_path) != 0)
+        ERR("Duplicate weather file line for type %s in config file: %s",
+            WEATHER_VARIABLES[j], trimmed);
+      if (sscanf(trimmed + used + used2, "%s %s %s", netcdf_config->file_path,
+                 netcdf_config->variable_name, units) != 3)
+        ERR("Invalid weather file line in config file: %s", trimmed);
+      size_t k;
+      for (k = 0; k < UNIT_NTYPES; k++) {
+        if (strcmp(units, VARIABLE_UNITS[k]) == 0)
+          break;
+      }
+      if (k == UNIT_NTYPES)
+        ERR("Unknown weather units in config file: %s", units);
+      config->weather_units[j] = k;
     }
-    if (j == WEATHER_NTYPES)
-      ERR("Unknown weather type in config file: %s", type);
-
-    DBG("Reading weather configuration for type: %s", type);
-
-    NetCDFConfig *netcdf_config = &config->weather_files[j];
-    if (strlen(netcdf_config->file_path) != 0)
-      ERR("Duplicate weather file line for type %s in config file: %s",
-          WEATHER_VARIABLES[j], trimmed);
-    if (sscanf(trimmed + used + used2, "%s %s %s %s %s",
-               netcdf_config->file_path, netcdf_config->variable_name,
-               netcdf_config->time_name, netcdf_config->latitude_name,
-               netcdf_config->longitude_name) != 5)
-      ERR("Invalid weather file line in config file: %s", trimmed);
   }
 
   // Validate
   for (int i = 0; i < WEATHER_NTYPES; i++) {
     if (strlen(config->weather_files[i].file_path) == 0) {
       ERR("Weather file for type %s is not specified in the configuration.\n",
+          WEATHER_VARIABLES[i]);
+    }
+    if (config->weather_units[i] == UNIT_NTYPES) {
+      ERR("Weather unit for type %s is not specified in the configuration.\n",
           WEATHER_VARIABLES[i]);
     }
   }
@@ -386,6 +426,9 @@ static void ReadCropsConfiguration(FILE *fp, Config *config) {
       ERR("Site file must be specified in the crop configuration for crop %s.",
           crop_config->crop_name);
     for (int i = 0; i < DOMAIN_NTYPES; i++) {
+      if (i > DOMAIN_PLANT_DATE) {
+        continue;
+      }
       if (strlen(crop_config->domain_files[i].file_path) == 0) {
         ERR("Domain file for type %s is not specified in the crop "
             "configuration for crop %s.\n",
@@ -423,6 +466,8 @@ void ReadConfiguration(const char *config_file, Config *configuration) {
   ReadGeneralConfiguration(fp, configuration);
   rewind(fp);
   ReadOutputConfiguration(fp, configuration);
+  rewind(fp);
+  ReadAreaConfiguration(fp, configuration);
   rewind(fp);
   ReadWeatherConfiguration(fp, configuration);
   rewind(fp);

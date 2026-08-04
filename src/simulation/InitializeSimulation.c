@@ -17,7 +17,6 @@ void InitializeSimulation(const char *config_file) {
   InitializeSimulationUnits();
   if (Standalone)
     InitializeMeteo();
-
   InitializeOutput();
 
   free(Configuration->crop_configurations);

@@ -5,7 +5,8 @@ void FinalizeSimulation(void) {
 
   FinalizeSimulationUnits();
   FinalizeDomainUnits();
-  FinalizeMeteo();
+  if (Standalone)
+    FinalizeMeteo();
   FinalizeOutput();
   Meteo = NULL;
   Loc = NULL;

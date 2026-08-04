@@ -7,210 +7,123 @@
 /* set decimals */
 #define roundz(x, d) ((floor(((x) * pow(10, d)) + .5)) / pow(10, d))
 
-static void InitializeMeteoData(const Config *config, const size_t size,
-                                const size_t shape[NR_DOMAIN_DIMENSIONS],
-                                float **data) {
+static void InitializeMeteoData(const size_t size, float **data) {
   DBG("InitializeMeteoData");
-
-  int status, ncid, varid;
-
-  for (int i = 0; i < WEATHER_NTYPES; i++) {
-    const NetCDFConfig *netcdf_config = &config->weather_files[i];
-
-    if ((status = nc_open(netcdf_config->file_path, NC_NOWRITE, &ncid)) !=
-        NC_NOERR)
-      ERR("Cannot open weather file %s: %s.", netcdf_config->file_path,
-          nc_strerror(status));
-
-    if ((status = nc_inq_varid(ncid, netcdf_config->variable_name, &varid)) !=
-        NC_NOERR)
-      ERR("Cannot find weather variable %s in file %s: %s.",
-          netcdf_config->variable_name, netcdf_config->file_path,
-          nc_strerror(status));
-
-    ValidateVariableShape(ncid, varid, shape);
-
-    if ((status = nc_close(ncid)) != NC_NOERR)
-      ERR("Cannot close weather file %s: %s.", netcdf_config->file_path,
-          nc_strerror(status));
-  }
 
   *data = malloc(size * sizeof(**data));
   if (*data == NULL)
     ERR("Could not allocate memory for weather data.");
 }
 
-static void StartMeteo(const Config *config, NetCDFMeta metas[WEATHER_NTYPES]) {
+static void StartMeteo(const Config *config, const double west,
+                       const double east, const double south,
+                       const double north,
+                       const size_t shape[NR_DOMAIN_DIMENSIONS],
+                       NetCDFMeta metas[WEATHER_NTYPES]) {
   DBG("StartMeteo");
-
-  int status;
 
   for (int i = 0; i < WEATHER_NTYPES; i++) {
     const NetCDFConfig *netcdf_config = &config->weather_files[i];
+    const size_t var_unit = config->weather_units[i];
     NetCDFMeta *meta = &metas[i];
 
-    if ((status = nc_open(netcdf_config->file_path, NC_NOWRITE, &meta->ncid)) !=
-        NC_NOERR)
-      ERR("Cannot open weather file %s: %s.", netcdf_config->file_path,
-          nc_strerror(status));
-
-    if ((status = nc_inq_varid(meta->ncid, netcdf_config->variable_name,
-                               &meta->varid)) != NC_NOERR)
-      ERR("Cannot find weather variable %s in file %s: %s.",
-          netcdf_config->variable_name, netcdf_config->file_path,
-          nc_strerror(status));
-
-    if ((status = nc_inq_dimid(meta->ncid, netcdf_config->time_name,
-                               &meta->time_dimid)) != NC_NOERR)
-      ERR("Cannot find time dimension %s in file %s: %s.",
-          netcdf_config->time_name, netcdf_config->file_path,
-          nc_strerror(status));
-
-    if ((status = nc_inq_dimlen(meta->ncid, meta->time_dimid,
-                                &meta->time_len)) != NC_NOERR)
-      ERR("Cannot read time dimension length in file %s: %s.",
-          netcdf_config->file_path, nc_strerror(status));
-
-    if (meta->time_len <= 0)
-      ERR("Time dimension length in file %s is not positive.",
-          netcdf_config->file_path);
-
-    meta->time = malloc(meta->time_len * sizeof(*meta->time));
-    if (meta->time == NULL)
-      ERR("Could not allocate memory for time values in meta for file %s.",
-          netcdf_config->file_path);
-
-    if ((status = nc_inq_varid(meta->ncid, netcdf_config->time_name,
-                               &meta->time_varid)) != NC_NOERR)
-      ERR("Cannot find time variable %s in file %s: %s.",
-          netcdf_config->time_name, netcdf_config->file_path,
-          nc_strerror(status));
-
-    size_t time_unit_len;
-    if ((status = nc_inq_attlen(meta->ncid, meta->time_varid, "units",
-                                &time_unit_len)) != NC_NOERR)
-      ERR("Cannot read time variable units length in file %s: %s.",
-          netcdf_config->file_path, nc_strerror(status));
-
-    if (time_unit_len >= MAX_STRING)
-      ERR("Time variable units length exceeds maximum in file %s.",
-          netcdf_config->file_path);
-
-    if ((status = nc_get_att_text(meta->ncid, meta->time_varid, "units",
-                                  meta->time_unit)) != NC_NOERR)
-      ERR("Cannot read time variable units in file %s: %s.",
-          netcdf_config->file_path, nc_strerror(status));
-    meta->time_unit[time_unit_len] = '\0'; // Null-terminate the string
-
-    int ref_year, ref_month, ref_day;
-    char unit[MAX_STRING];
-    if (sscanf(meta->time_unit, "%s since %d-%d-%d", unit, &ref_year,
-               &ref_month, &ref_day) != 4)
-      ERR("Invalid time variable units format in file %s: %s.",
-          netcdf_config->file_path, meta->time_unit);
-
-    struct tm ref_time = {0};
-    ref_time.tm_year = ref_year - 1900; // Adjust year for struct tm
-    ref_time.tm_mon = ref_month - 1;    // Adjust month for struct tm
-    ref_time.tm_mday = ref_day;
-
-    int seconds_per_unit;
-    if (strcmp(unit, "days") == 0)
-      seconds_per_unit = 86400;
-    else if (strcmp(unit, "hours") == 0)
-      seconds_per_unit = 3600;
-    else if (strcmp(unit, "seconds") == 0)
-      seconds_per_unit = 1;
-    else
-      ERR("Unsupported time unit in file %s: %s. Supported units are "
-          "'days', 'hours', and 'seconds'.",
-          netcdf_config->file_path, unit);
-
-    double *data = malloc(meta->time_len * sizeof(*data));
-    if (data == NULL)
-      ERR("Could not allocate memory for time values in file %s.",
-          netcdf_config->file_path);
-
-    if ((status = nc_get_var_double(meta->ncid, meta->time_varid, data)) !=
-        NC_NOERR)
-      ERR("Cannot read time variable values in file %s: %s.",
-          netcdf_config->file_path, nc_strerror(status));
-
-    for (size_t j = 0; j < meta->time_len; j++) {
-      meta->time[j] =
-          timegm_portable(&ref_time) + (time_t)(data[j] * seconds_per_unit);
-      if (j > 0) {
-        if (meta->time[j] - meta->time[j - 1] != TIME_STEP)
-          ERR("Time variable in file %s is not in line with model time "
-              "step. Difference between time steps is %ld seconds.",
-              netcdf_config->file_path, meta->time[j] - meta->time[j - 1]);
-        if (meta->time[j] <= meta->time[j - 1])
-          ERR("Time variable in file %s is not strictly increasing.",
-              netcdf_config->file_path);
-      }
-    }
-
-    free(data);
+    InitializeNetCDFMeta(netcdf_config->file_path, netcdf_config->variable_name,
+                         meta);
+    DeriveNetCDFMetaSpace(west, east, south, north, shape, meta);
+    meta->var_unit = var_unit;
   }
 }
 
-static void ReadMeteo(const size_t size,
-                      const size_t shape[NR_DOMAIN_DIMENSIONS],
-                      const NetCDFMeta weather_meta[WEATHER_NTYPES],
+static void ReadMeteo(const size_t size, const NetCDFMeta metas[WEATHER_NTYPES],
                       const time_t current, float data[], DomUnit grid[]) {
   DBG("ReadMeteo");
 
-  int status;
-  float fill_value;
-
-  size_t start[NR_DOMAIN_DIMENSIONS + 1] = {0, 0, 0};
-  size_t count[NR_DOMAIN_DIMENSIONS + 1] = {1, shape[0], shape[1]};
-
   for (size_t i = 0; i < WEATHER_NTYPES; i++) {
-    const NetCDFMeta *meta = &weather_meta[i];
+    const NetCDFMeta *meta = &metas[i];
+    size_t var_unit = meta->var_unit;
 
-    start[0] = (size_t)((current - meta->time[0]) / (time_t)TIME_STEP);
-
-    if ((status = nc_get_vara_float(meta->ncid, meta->varid, start, count,
-                                    &data[0])) != NC_NOERR)
-      ERR("Cannot read weather variable values: %s.", nc_strerror(status));
-
-    if ((status = nc_inq_var_fill(meta->ncid, meta->varid, NULL,
-                                  &fill_value)) != NC_NOERR)
-      ERR("Cannot query fill value for weather variable: %s.",
-          nc_strerror(status));
+    size_t time_start = (size_t)((current - meta->time[0]) / (time_t)TIME_STEP);
+    ReadNetCDFMetaFloat(meta, NAN, data, time_start);
 
     for (size_t j = 0; j < size; j++) {
       DomUnit *unit = &grid[j];
       Weather *met = &unit->met;
       float element = data[j];
-      if (element == fill_value)
-        element = NAN; // Assign NaN for missing values
 
       switch (i) {
       case WEATHER_TMIN:
-        // Convert from Kelvin to Celsius and round to 1 decimal place
-        met->Tmin = roundz(element - 273.15, 1);
+        switch (var_unit) {
+        case UNIT_CELSIUS:
+          met->Tmin = roundz(element, 1);
+          break;
+        case UNIT_KELVIN:
+          met->Tmin = roundz(element - 273.15, 1);
+          break;
+        default:
+          ERR("Unknown weather variable unit %zu for TMIN.", var_unit);
+        }
         break;
       case WEATHER_TMAX:
-        // Convert from Kelvin to Celsius and round to 1 decimal place
-        met->Tmax = roundz(element - 273.15, 1);
+        switch (var_unit) {
+        case UNIT_CELSIUS:
+          met->Tmax = roundz(element, 1);
+          break;
+        case UNIT_KELVIN:
+          met->Tmax = roundz(element - 273.15, 1);
+          break;
+        default:
+          ERR("Unknown weather variable unit %zu for TMAX.", var_unit);
+        }
         break;
       case WEATHER_RADIATION:
-        // Convert from W/m² to MJ/m²/day and round to 1 decimal place
-        met->Radiation = 1000 * roundz(86.400 * element, 1);
+        switch (var_unit) {
+        case UNIT_J_PER_M2_PER_DAY:
+          met->Radiation = roundz(element, 1);
+          break;
+        case UNIT_J_PER_M2_PER_S:
+        case UNIT_W_PER_M2:
+          met->Radiation = roundz(86400 * element, 1);
+          break;
+        default:
+          ERR("Unknown weather variable unit %zu for RADIATION.", var_unit);
+        }
         break;
       case WEATHER_RAIN:
-        // Convert from kg m⁻² s⁻¹ to cm/day and round to 2 decimal places
-        met->Rain = roundz(8640 * element, 2);
+        switch (var_unit) {
+        case UNIT_CM_PER_DAY:
+          met->Rain = roundz(element, 2);
+          break;
+        case UNIT_MM_PER_S:
+        case UNIT_KG_PER_M2_PER_S:
+          met->Rain = roundz(0.1 * 86400 * element, 2);
+          break;
+        case UNIT_M_PER_DAY:
+          met->Rain = roundz(100 * element, 2);
+          break;
+        default:
+          ERR("Unknown weather variable unit %zu for RAIN.", var_unit);
+        }
         break;
       case WEATHER_WINDSPEED:
-        // As m/s and round to 1 decimal place
-        met->Windspeed = roundz(element, 1);
+        switch (var_unit) {
+        case UNIT_M_PER_S:
+          met->Windspeed = roundz(element, 1);
+          break;
+        default:
+          ERR("Unknown weather variable unit %zu for WINDSPEED.", var_unit);
+        }
         break;
       case WEATHER_VAPOUR:
-        // As hPa and round to 1 decimal place
-        met->Vapour = roundz(element, 1);
+        switch (var_unit) {
+        case UNIT_HPA:
+          met->Vapour = roundz(element, 1);
+          break;
+        case UNIT_KPA:
+          met->Vapour = roundz(10 * element, 1);
+          break;
+        default:
+          ERR("Unknown weather variable unit %zu for VAPOUR.", var_unit);
+        }
         break;
       default:
         ERR("Unknown weather variable type %zu.", i);
@@ -219,14 +132,12 @@ static void ReadMeteo(const size_t size,
   }
 }
 
-static void StopMeteo(NetCDFMeta weather_meta[WEATHER_NTYPES]) {
+static void StopMeteo(NetCDFMeta metas[WEATHER_NTYPES]) {
   DBG("StopMeteo");
 
   for (int i = 0; i < WEATHER_NTYPES; i++) {
-    NetCDFMeta *meta = &weather_meta[i];
-    free(meta->time);
-    meta->time = NULL;
-    nc_close(meta->ncid);
+    NetCDFMeta *meta = &metas[i];
+    FreeNetCDFMeta(meta);
   }
 }
 
@@ -240,15 +151,15 @@ static void FinalizeMeteoData(float *data) {
 void InitializeMeteo(void) {
   DBG("InitializeMeteo");
 
-  InitializeMeteoData(Configuration, DomainSize, DomainShape, &WeatherData);
-  StartMeteo(Configuration, WeatherMetas);
+  InitializeMeteoData(DomainSize, &WeatherData);
+  StartMeteo(Configuration, West, East, South, North, DomainShape,
+             WeatherMetas);
 }
 
 void UpdateMeteo(void) {
   DBG("UpdateMeteo");
 
-  ReadMeteo(DomainSize, DomainShape, WeatherMetas, CurrentTime, WeatherData,
-            DomGrid);
+  ReadMeteo(DomainSize, WeatherMetas, CurrentTime, WeatherData, DomGrid);
 }
 
 void FinalizeMeteo(void) {

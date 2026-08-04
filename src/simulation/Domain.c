@@ -6,55 +6,27 @@
 static void InitializeDomainMeta(const NetCDFConfig *config, size_t *size,
                                  size_t (*shape)[NR_DOMAIN_DIMENSIONS],
                                  double **latitudes, double **longitudes,
-                                 double *resolution) {
+                                 double *resolution, double *west, double *east,
+                                 double *north, double *south) {
   DBG("InitializeDomainMeta");
+  NetCDFMeta meta;
+  InitializeNetCDFMeta(config->file_path, config->variable_name, &meta);
 
-  int status, ncid, lat_dimid, lon_dimid, lat_varid, lon_varid;
+  *size = meta.lat_len * meta.lon_len;
+  (*shape)[0] = meta.lat_len;
+  (*shape)[1] = meta.lon_len;
 
-  if ((status = nc_open(config->file_path, NC_NOWRITE, &ncid)) != NC_NOERR)
-    ERR("Cannot open domain file %s: %s.", config->file_path,
-        nc_strerror(status));
-  if ((status = nc_inq_dimid(ncid, config->latitude_name, &lat_dimid)) !=
-      NC_NOERR)
-    ERR("Cannot find latitude dimension %s: %s.", config->latitude_name,
-        nc_strerror(status));
-  if ((status = nc_inq_dimid(ncid, config->longitude_name, &lon_dimid)) !=
-      NC_NOERR)
-    ERR("Cannot find longitude dimension %s: %s.", config->longitude_name,
-        nc_strerror(status));
-
-  if ((status = nc_inq_dimlen(ncid, lat_dimid, &(*shape)[0])) != NC_NOERR)
-    ERR("Cannot read latitude dimension length: %s.", nc_strerror(status));
-  if ((status = nc_inq_dimlen(ncid, lon_dimid, &(*shape)[1])) != NC_NOERR)
-    ERR("Cannot read longitude dimension length: %s.", nc_strerror(status));
-
-  if ((*shape)[0] <= 1 || (*shape)[1] <= 1)
-    ERR("Latitude and longitude dimensions must be greater than one.");
-  /* Check if shape fits in size_t */
-  if ((*shape)[0] > DOMAIN_DIMENSION_SIZE_MAX ||
-      (*shape)[1] > DOMAIN_DIMENSION_SIZE_MAX)
-    ERR("Latitude and longitude dimensions are too large.");
-
-  *size = (*shape)[0] * (*shape)[1];
-  *latitudes = malloc((*shape)[0] * sizeof(**latitudes));
+  *latitudes = malloc(meta.lat_len * sizeof(**latitudes));
   if (*latitudes == NULL)
-    ERR("Could not allocate memory for Latitudes.");
-  *longitudes = malloc((*shape)[1] * sizeof(**longitudes));
+    ERR("Could not allocate memory for latitudes.");
+  *longitudes = malloc(meta.lon_len * sizeof(**longitudes));
   if (*longitudes == NULL)
-    ERR("Could not allocate memory for Longitudes.");
+    ERR("Could not allocate memory for longitudes.");
 
-  if ((status = nc_inq_varid(ncid, config->latitude_name, &lat_varid)) !=
-      NC_NOERR)
-    ERR("Cannot find latitude variable %s: %s.", config->latitude_name,
-        nc_strerror(status));
-  if ((status = nc_inq_varid(ncid, config->longitude_name, &lon_varid)) !=
-      NC_NOERR)
-    ERR("Cannot find longitude variable %s: %s.", config->longitude_name,
-        nc_strerror(status));
-  if ((status = nc_get_var_double(ncid, lat_varid, *latitudes)) != NC_NOERR)
-    ERR("Cannot read latitude variable values: %s.", nc_strerror(status));
-  if ((status = nc_get_var_double(ncid, lon_varid, *longitudes)) != NC_NOERR)
-    ERR("Cannot read longitude variable values: %s.", nc_strerror(status));
+  memcpy(*latitudes, meta.lat, meta.lat_len * sizeof(**latitudes));
+  memcpy(*longitudes, meta.lon, meta.lon_len * sizeof(**longitudes));
+
+  FreeNetCDFMeta(&meta);
 
   double lat_resolution = fabs(
       ((*latitudes)[(*shape)[0] - 1] - (*latitudes)[0]) / ((*shape)[0] - 1));
@@ -65,9 +37,14 @@ static void InitializeDomainMeta(const NetCDFConfig *config, size_t *size,
         lat_resolution, lon_resolution);
   *resolution = lat_resolution;
 
-  if ((status = nc_close(ncid)) != NC_NOERR)
-    ERR("Cannot close mask file %s: %s.", config->file_path,
-        nc_strerror(status));
+  *west = fmin((*longitudes)[0], (*longitudes)[(*shape)[1] - 1]);
+  *east = fmax((*longitudes)[0], (*longitudes)[(*shape)[1] - 1]);
+  *north = fmax((*latitudes)[0], (*latitudes)[(*shape)[0] - 1]);
+  *south = fmin((*latitudes)[0], (*latitudes)[(*shape)[0] - 1]);
+  *west = (*west) - 0.5 * (*resolution);
+  *east = (*east) + 0.5 * (*resolution);
+  *north = (*north) + 0.5 * (*resolution);
+  *south = (*south) - 0.5 * (*resolution);
 }
 
 static void InitializeDomainData(const size_t size,
@@ -99,11 +76,9 @@ static void InitializeDomainData(const size_t size,
 void InitializeDomainUnits(void) {
   DBG("InitializeDomainUnits");
 
-  NetCDFConfig *template_config;
-
-  template_config = &Configuration->weather_files[WEATHER_TMIN];
-  InitializeDomainMeta(template_config, &DomainSize, &DomainShape, &Latitudes,
-                       &Longitudes, &Resolution);
+  InitializeDomainMeta(&Configuration->area_file, &DomainSize, &DomainShape,
+                       &Latitudes, &Longitudes, &Resolution, &West, &East,
+                       &North, &South);
   InitializeDomainData(DomainSize, DomainShape, Latitudes, Longitudes,
                        &DomGrid);
 }

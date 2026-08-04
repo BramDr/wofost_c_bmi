@@ -4,43 +4,25 @@
 #include <netcdf.h>
 #include <string.h>
 
-static void
-InitializeSimulationMeta(const NetCDFConfig *config, const size_t domain_size,
-                         const size_t domain_shape[NR_DOMAIN_DIMENSIONS],
-                         size_t *active_size, size_t **active_index) {
+static void InitializeSimulationMeta(const NetCDFConfig *config,
+                                     const size_t domain_size,
+                                     const double west, const double east,
+                                     const double south, const double north,
+                                     const size_t shape[NR_DOMAIN_DIMENSIONS],
+                                     size_t *active_size,
+                                     size_t **active_index) {
   DBG("InitializeSimulationMeta");
 
-  int status, ncid, varid;
-  float *data;
-  float fill_value;
+  NetCDFMeta meta;
+  InitializeNetCDFMeta(config->file_path, config->variable_name, &meta);
+  DeriveNetCDFMetaSpace(west, east, south, north, shape, &meta);
 
-  if ((status = nc_open(config->file_path, NC_NOWRITE, &ncid)) != NC_NOERR)
-    ERR("Cannot open mask file %s: %s.", config->file_path,
-        nc_strerror(status));
-  if ((status = nc_inq_varid(ncid, config->variable_name, &varid)) != NC_NOERR)
-    ERR("Cannot find mask variable %s: %s.", config->variable_name,
-        nc_strerror(status));
-
-  ValidateVariableShape(ncid, varid, domain_shape);
-
-  data = malloc(domain_size * sizeof(*data));
+  float *data = malloc(domain_size * sizeof(*data));
   if (data == NULL)
     ERR("Could not allocate memory for mask data.");
 
-  if ((status = nc_get_var_float(ncid, varid, &data[0])) != NC_NOERR)
-    ERR("Cannot read mask variable values: %s.", nc_strerror(status));
-
-  if ((status = nc_inq_var_fill(ncid, varid, NULL, &fill_value)) != NC_NOERR)
-    ERR("Cannot query fill value for mask variable %s: %s.",
-        config->variable_name, nc_strerror(status));
-
-  /* Missing values (fill value or NaN) must never be treated as an active
-   * mask cell, so normalize them to -1 before the active/inactive split
-   * below. */
-  for (size_t i = 0; i < domain_size; i++) {
-    if (data[i] == fill_value || isnan(data[i]))
-      data[i] = -1.0f;
-  }
+  ReadNetCDFMetaFloat(&meta, -1.0f, data, 0);
+  FreeNetCDFMeta(&meta);
 
   *active_size = 0;
   for (size_t i = 0; i < domain_size; i++) {
@@ -60,18 +42,14 @@ InitializeSimulationMeta(const NetCDFConfig *config, const size_t domain_size,
     (*active_index)[idx++] = i;
   }
 
-  if ((status = nc_close(ncid)) != NC_NOERR)
-    ERR("Cannot close mask file %s: %s.", config->file_path,
-        nc_strerror(status));
-
   free(data);
 }
 
-static void
-InitializeSimulationMetas(const Config *config, const size_t domain_size,
-                          const size_t domain_shape[NR_DOMAIN_DIMENSIONS],
-                          const size_t crop_size, size_t **active_size,
-                          size_t ***active_index) {
+static void InitializeSimulationMetas(
+    const Config *config, const size_t domain_size, const double west,
+    const double east, const double south, const double north,
+    const size_t shape[NR_DOMAIN_DIMENSIONS], const size_t crop_size,
+    size_t **active_size, size_t ***active_index) {
   DBG("InitializeSimulationMetas");
 
   *active_size = malloc(crop_size * sizeof(**active_size));
@@ -84,8 +62,9 @@ InitializeSimulationMetas(const Config *config, const size_t domain_size,
   for (size_t i = 0; i < crop_size; i++) {
     CropConfig *crop_config = &config->crop_configurations[i];
     NetCDFConfig *netcdf_config = &crop_config->domain_files[DOMAIN_MASK];
-    InitializeSimulationMeta(netcdf_config, domain_size, domain_shape,
-                             &(*active_size)[i], &(*active_index)[i]);
+    InitializeSimulationMeta(netcdf_config, domain_size, west, east, south,
+                             north, shape, &(*active_size)[i],
+                             &(*active_index)[i]);
   }
 }
 
@@ -128,38 +107,27 @@ static void InitializeSimulationData(const Config *config,
 }
 
 static void ReadSimulationPlantDateData(
-    const NetCDFConfig *config, const size_t domain_size,
-    const size_t domain_shape[NR_DOMAIN_DIMENSIONS], const size_t active_size,
+    const NetCDFConfig *config, const size_t domain_size, double west,
+    double east, double south, double north,
+    const size_t shape[NR_DOMAIN_DIMENSIONS], const size_t active_size,
     const size_t *active_index, SimUnit *grid) {
   DBG("ReadSimulationPlantDateData");
 
-  int status, ncid, varid;
-  int fill_value;
-
-  if ((status = nc_open(config->file_path, NC_NOWRITE, &ncid)) != NC_NOERR)
-    ERR("Cannot open plant date file %s: %s.", config->file_path,
-        nc_strerror(status));
-  if ((status = nc_inq_varid(ncid, config->variable_name, &varid)) != NC_NOERR)
-    ERR("Cannot find plant date variable %s: %s.", config->variable_name,
-        nc_strerror(status));
-
-  ValidateVariableShape(ncid, varid, domain_shape);
+  NetCDFMeta meta;
+  InitializeNetCDFMeta(config->file_path, config->variable_name, &meta);
+  DeriveNetCDFMetaSpace(west, east, south, north, shape, &meta);
 
   int *data = malloc(domain_size * sizeof(*data));
   if (data == NULL)
     ERR("Could not allocate memory for plant date data.");
 
-  if ((status = nc_get_var_int(ncid, varid, &data[0])) != NC_NOERR)
-    ERR("Cannot read plant date variable values: %s.", nc_strerror(status));
-
-  if ((status = nc_inq_var_fill(ncid, varid, NULL, &fill_value)) != NC_NOERR)
-    ERR("Cannot query fill value for mask variable %s: %s.",
-        config->variable_name, nc_strerror(status));
+  ReadNetCDFMetaInt(&meta, -1, data, 0);
+  FreeNetCDFMeta(&meta);
 
   for (size_t i = 0; i < active_size; i++) {
     size_t index = active_index[i];
     int element = data[index];
-    if (element == fill_value)
+    if (element == -1)
       ERR("Missing value for plant date variable %s at index %zu.",
           config->variable_name, index);
     if (element < 0)
@@ -171,47 +139,32 @@ static void ReadSimulationPlantDateData(
     grid[i].start = element;
   }
 
-  if ((status = nc_close(ncid)) != NC_NOERR)
-    ERR("Cannot close plant date file %s: %s.", config->file_path,
-        nc_strerror(status));
-
   free(data);
 }
 
-static void
-ReadSimulationTsum1Data(const NetCDFConfig *config, const size_t domain_size,
-                        const size_t domain_shape[NR_DOMAIN_DIMENSIONS],
-                        const size_t active_size, const size_t *active_index,
-                        SimUnit *grid) {
-  DBG("ReadSimulationTsum1Data %zu", active_size);
+static void ReadSimulationTsum1Data(const NetCDFConfig *config,
+                                    const size_t domain_size, double west,
+                                    double east, double south, double north,
+                                    const size_t shape[NR_DOMAIN_DIMENSIONS],
+                                    const size_t active_size,
+                                    const size_t *active_index, SimUnit *grid) {
+  DBG("ReadSimulationTsum1Data");
 
-  int status, ncid, varid;
-  float fill_value;
-
-  if ((status = nc_open(config->file_path, NC_NOWRITE, &ncid)) != NC_NOERR)
-    ERR("Cannot open tsum1 file %s: %s.", config->file_path,
-        nc_strerror(status));
-  if ((status = nc_inq_varid(ncid, config->variable_name, &varid)) != NC_NOERR)
-    ERR("Cannot find tsum1 variable %s: %s.", config->variable_name,
-        nc_strerror(status));
-
-  ValidateVariableShape(ncid, varid, domain_shape);
+  NetCDFMeta meta;
+  InitializeNetCDFMeta(config->file_path, config->variable_name, &meta);
+  DeriveNetCDFMetaSpace(west, east, south, north, shape, &meta);
 
   float *data = malloc(domain_size * sizeof(*data));
   if (data == NULL)
     ERR("Could not allocate memory for tsum1 data.");
 
-  if ((status = nc_get_var_float(ncid, varid, &data[0])) != NC_NOERR)
-    ERR("Cannot read tsum1 variable values: %s.", nc_strerror(status));
-
-  if ((status = nc_inq_var_fill(ncid, varid, NULL, &fill_value)) != NC_NOERR)
-    ERR("Cannot query fill value for mask variable %s: %s.",
-        config->variable_name, nc_strerror(status));
+  ReadNetCDFMetaFloat(&meta, -1.0f, data, 0);
+  FreeNetCDFMeta(&meta);
 
   for (size_t i = 0; i < active_size; i++) {
     size_t index = active_index[i];
     float element = data[index];
-    if (element == fill_value)
+    if (element == -1.0f)
       ERR("Missing value for tsum1 variable %s at index %zu.",
           config->variable_name, index);
     if (element < 0)
@@ -220,47 +173,32 @@ ReadSimulationTsum1Data(const NetCDFConfig *config, const size_t domain_size,
     grid[i].crp.prm.TempSum1 = element;
   }
 
-  if ((status = nc_close(ncid)) != NC_NOERR)
-    ERR("Cannot close tsum1 file %s: %s.", config->file_path,
-        nc_strerror(status));
-
   free(data);
 }
 
-static void
-ReadSimulationTsum2Data(const NetCDFConfig *config, const size_t domain_size,
-                        const size_t domain_shape[NR_DOMAIN_DIMENSIONS],
-                        const size_t active_size, const size_t *active_index,
-                        SimUnit *grid) {
-  DBG("ReadSimulationTsum2Data %zu", active_size);
+static void ReadSimulationTsum2Data(const NetCDFConfig *config,
+                                    const size_t domain_size, double west,
+                                    double east, double south, double north,
+                                    const size_t shape[NR_DOMAIN_DIMENSIONS],
+                                    const size_t active_size,
+                                    const size_t *active_index, SimUnit *grid) {
+  DBG("ReadSimulationTsum2Data");
 
-  int status, ncid, varid;
-  float fill_value;
-
-  if ((status = nc_open(config->file_path, NC_NOWRITE, &ncid)) != NC_NOERR)
-    ERR("Cannot open tsum2 file %s: %s.", config->file_path,
-        nc_strerror(status));
-  if ((status = nc_inq_varid(ncid, config->variable_name, &varid)) != NC_NOERR)
-    ERR("Cannot find tsum2 variable %s: %s.", config->variable_name,
-        nc_strerror(status));
-
-  ValidateVariableShape(ncid, varid, domain_shape);
+  NetCDFMeta meta;
+  InitializeNetCDFMeta(config->file_path, config->variable_name, &meta);
+  DeriveNetCDFMetaSpace(west, east, south, north, shape, &meta);
 
   float *data = malloc(domain_size * sizeof(*data));
   if (data == NULL)
     ERR("Could not allocate memory for tsum2 data.");
 
-  if ((status = nc_get_var_float(ncid, varid, &data[0])) != NC_NOERR)
-    ERR("Cannot read tsum2 variable values: %s.", nc_strerror(status));
-
-  if ((status = nc_inq_var_fill(ncid, varid, NULL, &fill_value)) != NC_NOERR)
-    ERR("Cannot query fill value for mask variable %s: %s.",
-        config->variable_name, nc_strerror(status));
+  ReadNetCDFMetaFloat(&meta, -1.0f, data, 0);
+  FreeNetCDFMeta(&meta);
 
   for (size_t i = 0; i < active_size; i++) {
     size_t index = active_index[i];
     float element = data[index];
-    if (element == fill_value)
+    if (element == -1.0f)
       ERR("Missing value for tsum2 variable %s at index %zu.",
           config->variable_name, index);
     if (element < 0)
@@ -269,16 +207,13 @@ ReadSimulationTsum2Data(const NetCDFConfig *config, const size_t domain_size,
     grid[i].crp.prm.TempSum2 = element;
   }
 
-  if ((status = nc_close(ncid)) != NC_NOERR)
-    ERR("Cannot close tsum2 file %s: %s.", config->file_path,
-        nc_strerror(status));
-
   free(data);
 }
 
 static void
 ReadSimulationSpatialData(const Config *config, const size_t domain_size,
-                          const size_t domain_shape[NR_DOMAIN_DIMENSIONS],
+                          double west, double east, double south, double north,
+                          const size_t shape[NR_DOMAIN_DIMENSIONS],
                           const size_t crop_size, const size_t *active_size,
                           const size_t **active_index, SimUnit **grid) {
   DBG("ReadSimulationSpatialData");
@@ -289,17 +224,23 @@ ReadSimulationSpatialData(const Config *config, const size_t domain_size,
     NetCDFConfig *netcdf_config;
 
     netcdf_config = &crop_config->domain_files[DOMAIN_PLANT_DATE];
-    ReadSimulationPlantDateData(netcdf_config, domain_size, domain_shape,
-                                active_size[i], active_index[i], grid[i]);
+    ReadSimulationPlantDateData(netcdf_config, domain_size, west, east, south,
+                                north, shape, active_size[i], active_index[i],
+                                grid[i]);
 
-    // TODO: Uncomment the following lines if you want to read Tsum1 and Tsum2
-    // data netcdf_config = &crop_config->domain_files[DOMAIN_TSUM1];
-    // ReadSimulationTsum1Data(netcdf_config, domain_size, domain_shape,
-    //                         active_size[i], active_index[i], grid[i]);
+    netcdf_config = &crop_config->domain_files[DOMAIN_TSUM1];
+    if (strlen(netcdf_config->file_path) > 0) {
+      ReadSimulationTsum1Data(netcdf_config, domain_size, west, east, south,
+                              north, shape, active_size[i], active_index[i],
+                              grid[i]);
+    }
 
-    // netcdf_config = &crop_config->domain_files[DOMAIN_TSUM2];
-    // ReadSimulationTsum2Data(netcdf_config, domain_size, domain_shape,
-    //                         active_size[i], active_index[i], grid[i]);
+    netcdf_config = &crop_config->domain_files[DOMAIN_TSUM2];
+    if (strlen(netcdf_config->file_path) > 0) {
+      ReadSimulationTsum2Data(netcdf_config, domain_size, west, east, south,
+                              north, shape, active_size[i], active_index[i],
+                              grid[i]);
+    }
   }
 }
 
@@ -308,14 +249,15 @@ void InitializeSimulationUnits(void) {
 
   CropSize = Configuration->CropSize;
 
-  InitializeSimulationMetas(Configuration, DomainSize, DomainShape, CropSize,
-                            &ActiveSize, &ActiveIndex);
+  InitializeSimulationMetas(Configuration, DomainSize, West, East, South, North,
+                            DomainShape, CropSize, &ActiveSize, &ActiveIndex);
 
   InitializeSimulationData(Configuration, CropSize, ActiveSize,
                            (const size_t **)ActiveIndex, DomGrid, &SimGrid);
 
-  ReadSimulationSpatialData(Configuration, DomainSize, DomainShape, CropSize,
-                            ActiveSize, (const size_t **)ActiveIndex, SimGrid);
+  ReadSimulationSpatialData(Configuration, DomainSize, West, East, South, North,
+                            DomainShape, CropSize, ActiveSize,
+                            (const size_t **)ActiveIndex, SimGrid);
 }
 
 void FinalizeSimulationUnits(void) {

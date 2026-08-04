@@ -11,7 +11,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
-  add_compile_options(-Wall -Wextra -Wformat=2 -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations)
+  add_compile_options(-Wall -Wextra -Wformat=2 -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -O2)
 endif()
 
 # Lets DBG() output be turned on in a non-Debug build (e.g. Release) without

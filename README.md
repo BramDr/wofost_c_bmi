@@ -1,3 +1,8 @@
+## Framework changes
+
+### Units
+Added weather units support to specify and automatically convert values.
+
 ## WOFOST changes
 
 ### Options
