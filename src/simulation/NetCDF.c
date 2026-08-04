@@ -80,6 +80,30 @@ void InitializeNetCDFMeta(const char *path, const char *variable_name,
       NC_NOERR)
     ERR("Cannot read longitude variable values: %s.", nc_strerror(status));
 
+  // If latitudes and/or longitudes are stored largest-to-smallest, flip them
+  // to ascending order in memory. The original on-disk order is preserved by
+  // lat_flipped/lon_flipped so that ReadNetCDFMetaFloat/ReadNetCDFMetaInt can
+  // translate ascending-order indices back to file indices when reading data.
+  meta->lat_flipped =
+      meta->lat_len > 1 && meta->lat[0] > meta->lat[meta->lat_len - 1];
+  if (meta->lat_flipped) {
+    for (size_t i = 0; i < meta->lat_len / 2; i++) {
+      double tmp = meta->lat[i];
+      meta->lat[i] = meta->lat[meta->lat_len - 1 - i];
+      meta->lat[meta->lat_len - 1 - i] = tmp;
+    }
+  }
+
+  meta->lon_flipped =
+      meta->lon_len > 1 && meta->lon[0] > meta->lon[meta->lon_len - 1];
+  if (meta->lon_flipped) {
+    for (size_t i = 0; i < meta->lon_len / 2; i++) {
+      double tmp = meta->lon[i];
+      meta->lon[i] = meta->lon[meta->lon_len - 1 - i];
+      meta->lon[meta->lon_len - 1 - i] = tmp;
+    }
+  }
+
   // Derive time dimension, variable and data
   status = nc_inq_dimid(meta->ncid, "time", &meta->time_dimid);
   if (status != NC_EBADDIM) {
@@ -240,6 +264,34 @@ void DeriveNetCDFMetaTime(const time_t start, const time_t end,
     ERR("End time %ld is beyond the last time step in NetCDF file.", end);
 }
 
+// Flips a 2D [lat, lon] slab in place along the lat and/or lon axes. Used to
+// bring data read from a file with descending lat/lon order in line with the
+// ascending order exposed via NetCDFMeta.lat/lon.
+static void FlipDataFloat(float data[], size_t lat_count, size_t lon_count,
+                          bool flip_lat, bool flip_lon) {
+  if (flip_lat) {
+    for (size_t i = 0; i < lat_count / 2; i++) {
+      size_t j = lat_count - 1 - i;
+      for (size_t k = 0; k < lon_count; k++) {
+        float tmp = data[i * lon_count + k];
+        data[i * lon_count + k] = data[j * lon_count + k];
+        data[j * lon_count + k] = tmp;
+      }
+    }
+  }
+
+  if (flip_lon) {
+    for (size_t i = 0; i < lat_count; i++) {
+      for (size_t k = 0; k < lon_count / 2; k++) {
+        size_t l = lon_count - 1 - k;
+        float tmp = data[i * lon_count + k];
+        data[i * lon_count + k] = data[i * lon_count + l];
+        data[i * lon_count + l] = tmp;
+      }
+    }
+  }
+}
+
 void ReadNetCDFMetaFloat(const NetCDFMeta *meta, const float fill_value,
                          float data[], size_t time_index) {
   int status;
@@ -247,32 +299,73 @@ void ReadNetCDFMetaFloat(const NetCDFMeta *meta, const float fill_value,
   size_t start[NR_DOMAIN_DIMENSIONS + 1];
   size_t count[NR_DOMAIN_DIMENSIONS + 1];
 
-  if (meta->time_dimid > 0) {
+  // meta->lat_start/lon_start are indices into the ascending-order lat/lon
+  // arrays. If the file itself stores lat/lon descending, translate to the
+  // corresponding file-order start index before reading.
+  size_t lat_start = meta->lat_flipped
+                         ? meta->lat_len - meta->lat_start - meta->lat_count
+                         : meta->lat_start;
+  size_t lon_start = meta->lon_flipped
+                         ? meta->lon_len - meta->lon_start - meta->lon_count
+                         : meta->lon_start;
+
+  if (meta->time_dimid >= 0) {
     start[0] = time_index;
-    start[1] = meta->lat_start;
-    start[2] = meta->lon_start;
+    start[1] = lat_start;
+    start[2] = lon_start;
     count[0] = 1;
     count[1] = meta->lat_count;
     count[2] = meta->lon_count;
   } else {
-    start[0] = meta->lat_start;
-    start[1] = meta->lon_start;
+    start[0] = lat_start;
+    start[1] = lon_start;
     count[0] = meta->lat_count;
     count[1] = meta->lon_count;
   }
 
   if ((status = nc_get_vara_float(meta->ncid, meta->varid, start, count,
                                   data)) != NC_NOERR)
-    ERR("Cannot read mask variable values: %s.", nc_strerror(status));
+    ERR("Cannot read variable values from file %s: %s.", meta->path,
+        nc_strerror(status));
+
+  if (meta->lat_flipped || meta->lon_flipped)
+    FlipDataFloat(data, meta->lat_count, meta->lon_count, meta->lat_flipped,
+                  meta->lon_flipped);
 
   if ((status = nc_inq_var_fill(meta->ncid, meta->varid, NULL, &var_fill)) !=
       NC_NOERR)
-    ERR("Cannot query fill value for mask variable %s: %s.", meta->path,
+    ERR("Cannot query fill value for variable %s: %s.", meta->path,
         nc_strerror(status));
 
   for (size_t i = 0; i < meta->lat_count * meta->lon_count; i++) {
     if (data[i] == var_fill || isnan(data[i]))
       data[i] = fill_value;
+  }
+}
+
+// Int counterpart of FlipDataFloat; see that function for details.
+static void FlipDataInt(int data[], size_t lat_count, size_t lon_count,
+                        bool flip_lat, bool flip_lon) {
+  if (flip_lat) {
+    for (size_t i = 0; i < lat_count / 2; i++) {
+      size_t j = lat_count - 1 - i;
+      for (size_t k = 0; k < lon_count; k++) {
+        int tmp = data[i * lon_count + k];
+        data[i * lon_count + k] = data[j * lon_count + k];
+        data[j * lon_count + k] = tmp;
+      }
+    }
+  }
+
+  if (flip_lon) {
+    for (size_t i = 0; i < lat_count; i++) {
+      for (size_t k = 0; k < lon_count / 2; k++) {
+        size_t l = lon_count - 1 - k;
+        int tmp = data[i * lon_count + k];
+        data[i * lon_count + k] = data[i * lon_count + l];
+        data[i * lon_count + l] = tmp;
+      }
+    }
   }
 }
 
@@ -283,28 +376,39 @@ void ReadNetCDFMetaInt(const NetCDFMeta *meta, const int fill_value, int data[],
   size_t start[NR_DOMAIN_DIMENSIONS + 1];
   size_t count[NR_DOMAIN_DIMENSIONS + 1];
 
+  size_t lat_start = meta->lat_flipped
+                         ? meta->lat_len - meta->lat_start - meta->lat_count
+                         : meta->lat_start;
+  size_t lon_start = meta->lon_flipped
+                         ? meta->lon_len - meta->lon_start - meta->lon_count
+                         : meta->lon_start;
+
   if (meta->time_dimid > 0) {
     start[0] = time_index;
-    start[1] = meta->lat_start;
-    start[2] = meta->lon_start;
+    start[1] = lat_start;
+    start[2] = lon_start;
     count[0] = 1;
     count[1] = meta->lat_count;
     count[2] = meta->lon_count;
   } else {
-    start[0] = meta->lat_start;
-    start[1] = meta->lon_start;
+    start[0] = lat_start;
+    start[1] = lon_start;
     count[0] = meta->lat_count;
     count[1] = meta->lon_count;
   }
 
   if ((status = nc_get_vara_int(meta->ncid, meta->varid, start, count, data)) !=
       NC_NOERR)
-    ERR("Cannot read mask variable values in file %s: %s.", meta->path,
+    ERR("Cannot read variable values in file %s: %s.", meta->path,
         nc_strerror(status));
+
+  if (meta->lat_flipped || meta->lon_flipped)
+    FlipDataInt(data, meta->lat_count, meta->lon_count, meta->lat_flipped,
+                meta->lon_flipped);
 
   if ((status = nc_inq_var_fill(meta->ncid, meta->varid, NULL, &var_fill)) !=
       NC_NOERR)
-    ERR("Cannot query fill value for mask variable %s: %s.", meta->path,
+    ERR("Cannot query fill value for variable %s: %s.", meta->path,
         nc_strerror(status));
 
   for (size_t i = 0; i < meta->lat_count * meta->lon_count; i++) {
@@ -320,7 +424,7 @@ void FreeNetCDFMeta(NetCDFMeta *meta) {
     return;
 
   if ((status = nc_close(meta->ncid)) != NC_NOERR)
-    ERR("Cannot close mask file %s: %s.", meta->path, nc_strerror(status));
+    ERR("Cannot close file %s: %s.", meta->path, nc_strerror(status));
   meta->ncid = -1; // Reset ncid to indicate that the file is closed
 
   free(meta->path);

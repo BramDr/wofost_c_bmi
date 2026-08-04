@@ -157,6 +157,7 @@ typedef struct NETCDFMETA {
   double *lat;
   size_t lat_start;
   size_t lat_count;
+  bool lat_flipped;
 
   int lon_dimid;
   size_t lon_len;
@@ -164,6 +165,7 @@ typedef struct NETCDFMETA {
   double *lon;
   size_t lon_start;
   size_t lon_count;
+  bool lon_flipped;
 
   int time_dimid;
   size_t time_len;

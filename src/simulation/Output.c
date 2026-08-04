@@ -8,7 +8,6 @@ static void InitializeOutputData(const Config *config, const size_t domain_size,
                                  const size_t crop_size, size_t *sizes[],
                                  size_t **types[], NetCDFMeta **metas[],
                                  float *float_data[], int *int_data[]) {
-  DBG("InitializeOutputData");
 
   *float_data = malloc(domain_size * sizeof(**float_data));
   if (*float_data == NULL)
@@ -80,7 +79,6 @@ static void StartOutput(const Config *configuration,
                         const double latitudes[], const double longitudes[],
                         const size_t crop_size, const size_t sizes[],
                         const size_t *types[], NetCDFMeta *metas[]) {
-  DBG("StartOutput");
 
   int status;
 
@@ -91,8 +89,6 @@ static void StartOutput(const Config *configuration,
   for (size_t i = 0; i < crop_size; i++) {
     CropConfig *crop_config = &configuration->crop_configurations[i];
     char *crop_name = crop_config->crop_name;
-
-    DBG("Creating output files for crop %s", crop_name);
 
     for (size_t j = 0; j < sizes[i]; j++) {
       NetCDFMeta *meta = &metas[i][j];
@@ -269,7 +265,6 @@ static void WriteOutputData(const size_t domain_size, const size_t crop_size,
                             const size_t sizes[], const size_t *types[],
                             NetCDFMeta *metas[], float float_data[],
                             int int_data[]) {
-  DBG("WriteOutputData");
 
   for (size_t i = 0; i < crop_size; i++) {
 
@@ -395,7 +390,6 @@ static void WriteOutputData(const size_t domain_size, const size_t crop_size,
 
 static void StopOutput(const size_t crop_size, const size_t sizes[],
                        NetCDFMeta *metas[]) {
-  DBG("StopOutput");
 
   int status;
   for (size_t i = 0; i < crop_size; i++) {
@@ -411,7 +405,6 @@ static void StopOutput(const size_t crop_size, const size_t sizes[],
 static void FinalizeOutputData(float *float_data[], int *int_data[],
                                size_t *sizes[], size_t **types[],
                                NetCDFMeta **metas[]) {
-  DBG("FinalizeOutputData");
 
   free(*float_data);
   free(*int_data);

@@ -11,7 +11,6 @@ static void InitializeSimulationMeta(const NetCDFConfig *config,
                                      const size_t shape[NR_DOMAIN_DIMENSIONS],
                                      size_t *active_size,
                                      size_t **active_index) {
-  DBG("InitializeSimulationMeta");
 
   NetCDFMeta meta;
   InitializeNetCDFMeta(config->file_path, config->variable_name, &meta);
@@ -50,7 +49,6 @@ static void InitializeSimulationMetas(
     const double east, const double south, const double north,
     const size_t shape[NR_DOMAIN_DIMENSIONS], const size_t crop_size,
     size_t **active_size, size_t ***active_index) {
-  DBG("InitializeSimulationMetas");
 
   *active_size = malloc(crop_size * sizeof(**active_size));
   if (*active_size == NULL)
@@ -73,7 +71,6 @@ static void InitializeSimulationData(const Config *config,
                                      const size_t *active_size,
                                      const size_t **active_index,
                                      DomUnit *domain_grid, SimUnit ***grid) {
-  DBG("InitializeSimulationData");
 
   *grid = malloc(crop_size * sizeof(**grid));
   if (*grid == NULL)
@@ -111,7 +108,6 @@ static void ReadSimulationPlantDateData(
     double east, double south, double north,
     const size_t shape[NR_DOMAIN_DIMENSIONS], const size_t active_size,
     const size_t *active_index, SimUnit *grid) {
-  DBG("ReadSimulationPlantDateData");
 
   NetCDFMeta meta;
   InitializeNetCDFMeta(config->file_path, config->variable_name, &meta);
@@ -148,7 +144,6 @@ static void ReadSimulationTsum1Data(const NetCDFConfig *config,
                                     const size_t shape[NR_DOMAIN_DIMENSIONS],
                                     const size_t active_size,
                                     const size_t *active_index, SimUnit *grid) {
-  DBG("ReadSimulationTsum1Data");
 
   NetCDFMeta meta;
   InitializeNetCDFMeta(config->file_path, config->variable_name, &meta);
@@ -182,7 +177,6 @@ static void ReadSimulationTsum2Data(const NetCDFConfig *config,
                                     const size_t shape[NR_DOMAIN_DIMENSIONS],
                                     const size_t active_size,
                                     const size_t *active_index, SimUnit *grid) {
-  DBG("ReadSimulationTsum2Data");
 
   NetCDFMeta meta;
   InitializeNetCDFMeta(config->file_path, config->variable_name, &meta);
@@ -216,7 +210,6 @@ ReadSimulationSpatialData(const Config *config, const size_t domain_size,
                           const size_t shape[NR_DOMAIN_DIMENSIONS],
                           const size_t crop_size, const size_t *active_size,
                           const size_t **active_index, SimUnit **grid) {
-  DBG("ReadSimulationSpatialData");
 
   for (size_t i = 0; i < crop_size; i++) {
     CropConfig *crop_config = &config->crop_configurations[i];

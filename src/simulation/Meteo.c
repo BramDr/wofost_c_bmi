@@ -8,7 +8,6 @@
 #define roundz(x, d) ((floor(((x) * pow(10, d)) + .5)) / pow(10, d))
 
 static void InitializeMeteoData(const size_t size, float **data) {
-  DBG("InitializeMeteoData");
 
   *data = malloc(size * sizeof(**data));
   if (*data == NULL)
@@ -17,10 +16,9 @@ static void InitializeMeteoData(const size_t size, float **data) {
 
 static void StartMeteo(const Config *config, const double west,
                        const double east, const double south,
-                       const double north,
+                       const double north, const size_t start, const size_t end,
                        const size_t shape[NR_DOMAIN_DIMENSIONS],
                        NetCDFMeta metas[WEATHER_NTYPES]) {
-  DBG("StartMeteo");
 
   for (int i = 0; i < WEATHER_NTYPES; i++) {
     const NetCDFConfig *netcdf_config = &config->weather_files[i];
@@ -30,13 +28,13 @@ static void StartMeteo(const Config *config, const double west,
     InitializeNetCDFMeta(netcdf_config->file_path, netcdf_config->variable_name,
                          meta);
     DeriveNetCDFMetaSpace(west, east, south, north, shape, meta);
+    DeriveNetCDFMetaTime(start, end, meta);
     meta->var_unit = var_unit;
   }
 }
 
 static void ReadMeteo(const size_t size, const NetCDFMeta metas[WEATHER_NTYPES],
                       const time_t current, float data[], DomUnit grid[]) {
-  DBG("ReadMeteo");
 
   for (size_t i = 0; i < WEATHER_NTYPES; i++) {
     const NetCDFMeta *meta = &metas[i];
@@ -133,7 +131,6 @@ static void ReadMeteo(const size_t size, const NetCDFMeta metas[WEATHER_NTYPES],
 }
 
 static void StopMeteo(NetCDFMeta metas[WEATHER_NTYPES]) {
-  DBG("StopMeteo");
 
   for (int i = 0; i < WEATHER_NTYPES; i++) {
     NetCDFMeta *meta = &metas[i];
@@ -142,7 +139,6 @@ static void StopMeteo(NetCDFMeta metas[WEATHER_NTYPES]) {
 }
 
 static void FinalizeMeteoData(float *data) {
-  DBG("FinalizeMeteoData");
 
   free(data);
   data = NULL;
@@ -152,8 +148,11 @@ void InitializeMeteo(void) {
   DBG("InitializeMeteo");
 
   InitializeMeteoData(DomainSize, &WeatherData);
-  StartMeteo(Configuration, West, East, South, North, DomainShape,
-             WeatherMetas);
+
+  time_t StartTime = timegm_portable(&Start);
+  time_t EndTime = timegm_portable(&End);
+  StartMeteo(Configuration, West, East, South, North, StartTime, EndTime,
+             DomainShape, WeatherMetas);
 }
 
 void UpdateMeteo(void) {

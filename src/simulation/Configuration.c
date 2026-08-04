@@ -12,7 +12,6 @@ static bool skip_comment(char *trimmed) {
 }
 
 static void ReadGeneralConfiguration(FILE *fp, Config *config) {
-  DBG("ReadGeneralConfiguration");
 
   char line[MAX_STRING], option[MAX_STRING];
   int used;
@@ -105,7 +104,6 @@ static void ReadGeneralConfiguration(FILE *fp, Config *config) {
 }
 
 static void ReadOutputConfiguration(FILE *fp, Config *config) {
-  DBG("ReadOutputConfiguration");
 
   char line[MAX_STRING], option[MAX_STRING];
   int used;
@@ -138,7 +136,6 @@ static void ReadOutputConfiguration(FILE *fp, Config *config) {
 }
 
 static void ReadAreaConfiguration(FILE *fp, Config *config) {
-  DBG("ReadAreaConfiguration");
 
   char line[MAX_STRING], option[MAX_STRING];
   int used;
@@ -171,7 +168,6 @@ static void ReadAreaConfiguration(FILE *fp, Config *config) {
 }
 
 static void ReadWeatherConfiguration(FILE *fp, Config *config) {
-  DBG("ReadWeatherConfiguration");
 
   char line[MAX_STRING], option[MAX_STRING], type[MAX_STRING],
       units[MAX_STRING];
@@ -234,7 +230,6 @@ static void ReadWeatherConfiguration(FILE *fp, Config *config) {
 }
 
 static void ReadCropConfiguration(FILE *fp, CropConfig *config) {
-  DBG("ReadCropConfiguration");
 
   char line[MAX_STRING], option[MAX_STRING], type[MAX_STRING];
   int used, used2;
@@ -326,7 +321,6 @@ static void ReadCropConfiguration(FILE *fp, CropConfig *config) {
 }
 
 static void ReadCropsConfiguration(FILE *fp, Config *config) {
-  DBG("ReadCropsConfiguration");
 
   char line[MAX_STRING], option[MAX_STRING];
   int used;
@@ -394,8 +388,6 @@ static void ReadCropsConfiguration(FILE *fp, Config *config) {
     CropConfig *crop_config = &config->crop_configurations[crop_index];
     if (sscanf(trimmed + used, "%s", crop_config->crop_name) != 1)
       ERR("Invalid %s line in config file: %s", CROP_NAME_OPTION, trimmed);
-
-    DBG("Reading crop configuration for crop: %s", crop_config->crop_name);
 
     ReadCropConfiguration(fp, crop_config);
     crop_index++;

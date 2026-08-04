@@ -8,7 +8,7 @@ static void InitializeDomainMeta(const NetCDFConfig *config, size_t *size,
                                  double **latitudes, double **longitudes,
                                  double *resolution, double *west, double *east,
                                  double *north, double *south) {
-  DBG("InitializeDomainMeta");
+
   NetCDFMeta meta;
   InitializeNetCDFMeta(config->file_path, config->variable_name, &meta);
 
@@ -51,7 +51,6 @@ static void InitializeDomainData(const size_t size,
                                  const size_t shape[NR_DOMAIN_DIMENSIONS],
                                  const double latitudes[],
                                  const double longitudes[], DomUnit **grid) {
-  DBG("InitializeDomainData");
 
   *grid = malloc(size * sizeof(**grid));
   if (*grid == NULL)
