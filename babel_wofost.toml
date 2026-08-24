@@ -13,13 +13,7 @@ undef_macros = []
 define_macros = []
 libraries = ["netcdf", "m"]
 library_dirs = ["$CONDA_PREFIX/lib"]
-include_dirs = [
-    "include",
-    "include/bmi",
-    "include/simulation",
-    "include/wofost",
-    "$CONDA_PREFIX/include",
-]
+include_dirs = ["$CONDA_PREFIX/include"]
 extra_compile_args = ["-std=gnu11"]
 
 # Describe the newly wrapped package.
@@ -35,9 +29,5 @@ package_license = "GNU General Public License v3"
 summary = "PyMT component for the C WOFOST model"
 
 [ci]
-python_version = [
-    "3.14"
-]
-os = [
-    "linux"
-]
+python_version = ["3.14"]
+os = ["linux"]
