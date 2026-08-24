@@ -18,7 +18,7 @@ int main(const int argc, const char *argv[]) {
     ERR("Failed to allocate memory for the BMI model.");
 
   INFO("Registering model");
-  if (RegisterBmiWofost(model) == NULL)
+  if (register_bmi_wofost(model) == NULL)
     ERR("Failed to register BMI model.");
 
   char component_name[BMI_MAX_COMPONENT_NAME];

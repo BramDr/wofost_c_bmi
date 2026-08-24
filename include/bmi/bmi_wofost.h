@@ -1,7 +1,6 @@
 #ifndef BMI_WOFOST_H
 #define BMI_WOFOST_H
 
-#include "defs.h"
 #include <bmi.h>
 #include <stddef.h>
 
@@ -45,6 +44,6 @@ typedef struct {
   const char *location;                 /* "node", "face", or "edge" */
 } BmiVar;
 
-extern Bmi *RegisterBmiWofost(Bmi *model);
+extern Bmi *register_bmi_wofost(Bmi *model);
 
 #endif // BMI_WOFOST_H

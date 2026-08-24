@@ -569,7 +569,7 @@ static int Set_value_at_indices(struct Bmi *self, const char *name, int *inds,
  * -----------------------------------------------------------------------
  */
 
-Bmi *RegisterBmiWofost(Bmi *model) {
+Bmi *register_bmi_wofost(Bmi *model) {
   if (!model) {
     return model;
   }

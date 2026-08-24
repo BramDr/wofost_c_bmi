@@ -1,0 +1,43 @@
+# See https://babelizer.readthedocs.io/ for more information
+
+# Describe the library being wrapped.
+[library.WOFOST]
+language = "c"
+library = "bmiwofost"
+header = "bmi_wofost.h"
+entry_point = "register_bmi_wofost"
+
+# Describe compiler options need to build the library being wrapped.
+[build]
+undef_macros = []
+define_macros = []
+libraries = ["netcdf", "m"]
+library_dirs = ["$CONDA_PREFIX/lib"]
+include_dirs = [
+    "include",
+    "include/bmi",
+    "include/simulation",
+    "include/wofost",
+    "$CONDA_PREFIX/include",
+]
+extra_compile_args = ["-std=gnu11"]
+
+# Describe the newly wrapped package.
+[package]
+name = "pymt_wofost"
+requirements = ["libnetcdf"]
+
+[info]
+github_username = "BramDr"
+package_author = "Bram Droppers"
+package_author_email = "bram.droppers@gmail.com"
+package_license = "GNU General Public License v3"
+summary = "PyMT component for the C WOFOST model"
+
+[ci]
+python_version = [
+    "3.14"
+]
+os = [
+    "linux"
+]

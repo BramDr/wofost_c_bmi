@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(wofost_bmi C)
+project(wofost C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -12,18 +12,6 @@ endif()
 
 if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
   add_compile_options(-Wall -Wextra -Wformat=2 -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wshadow -O2)
-endif()
-
-# Lets DBG() output be turned on in a non-Debug build (e.g. Release) without
-# a full reconfigure to CMAKE_BUILD_TYPE=Debug. defs.h treats NDEBUG as an
-# unconditional kill switch for DBG(), matching assert()'s convention, so any
-# NDEBUG that CMake's default Release/RelWithDebInfo/MinSizeRel flags add has
-# to be stripped back out for this to take effect.
-option(WOFOST_BMI_VERBOSE "Enable DBG() debug output regardless of build type" OFF)
-if(WOFOST_BMI_VERBOSE)
-  foreach(cfg RELEASE RELWITHDEBINFO MINSIZEREL)
-    string(REPLACE "-DNDEBUG" "" CMAKE_C_FLAGS_${cfg} "${CMAKE_C_FLAGS_${cfg}}")
-  endforeach()
 endif()
 
 # netCDF is on conda-forge with a CMake package config; picked up automatically
@@ -54,22 +42,48 @@ set(WOFOST_BMI_INCLUDE_DIRS
 # new/removed .c files on the next build without having to touch this list by
 # hand. Re-run cmake manually if you ever notice stale sources after a rename.
 file(GLOB_RECURSE WOFOST_BMI_SOURCES CONFIGURE_DEPENDS "src/*.c")
+list(REMOVE_ITEM WOFOST_BMI_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/bmi/BmiMain.c")
 
-add_executable(wofost_bmi ${WOFOST_BMI_SOURCES})
+# babel_wofost.toml links its Python wrapper against this library (see
+# [library.WOFOST] library = "bmi_wofost"), so it needs to be install()-ed
+# onto the linker/header search path, e.g.
+#   cmake --install build --prefix "$CONDA_PREFIX"
+add_library(bmiwofost SHARED ${WOFOST_BMI_SOURCES})
 
-target_include_directories(wofost_bmi PRIVATE
+target_include_directories(bmiwofost PRIVATE
   ${WOFOST_BMI_INCLUDE_DIRS}
   ${BMI_INCLUDE_DIR}
 )
 
-target_link_libraries(wofost_bmi PRIVATE
+target_link_libraries(bmiwofost PRIVATE
   netCDF::netcdf
   m
 )
 
-# Enables the DBG() macro in include/defs.h for Debug builds, or any build
-# when WOFOST_BMI_VERBOSE is set, regardless of whether the generator is
-# single-config (Makefiles/Ninja) or multi-config (Visual Studio).
-target_compile_definitions(wofost_bmi PRIVATE
-  $<$<OR:$<CONFIG:Debug>,$<BOOL:${WOFOST_BMI_VERBOSE}>>:DEBUG>
+# Enables the DBG() macro in include/defs.h for Debug builds, regardless of
+# whether the generator is single-config (Makefiles/Ninja) or multi-config
+# (Visual Studio).
+target_compile_definitions(bmiwofost PRIVATE
+  $<$<CONFIG:Debug>:DEBUG>
 )
+
+# Standalone CLI (see run_ci.sh); a thin wrapper around the library above.
+add_executable(wofost src/bmi/BmiMain.c)
+
+target_include_directories(wofost PRIVATE
+  ${WOFOST_BMI_INCLUDE_DIRS}
+  ${BMI_INCLUDE_DIR}
+)
+
+target_link_libraries(wofost PRIVATE
+  bmiwofost
+)
+
+include(GNUInstallDirs)
+install(TARGETS bmiwofost
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+# bmi_wofost.h itself #includes "defs.h", so it has to travel with it.
+install(FILES include/bmi/bmi_wofost.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

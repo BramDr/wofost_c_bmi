@@ -7,3 +7,7 @@ dependencies:
   - bmi-c
   - make
   - cmake
+  - python=3
+  - babelizer
+  # babelizer imports pkg_resources, which setuptools removed in 81.0.0.
+  - setuptools<81
