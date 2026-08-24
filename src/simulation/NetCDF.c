@@ -383,7 +383,7 @@ void ReadNetCDFMetaInt(const NetCDFMeta *meta, const int fill_value, int data[],
                          ? meta->lon_len - meta->lon_start - meta->lon_count
                          : meta->lon_start;
 
-  if (meta->time_dimid > 0) {
+  if (meta->time_dimid >= 0) {
     start[0] = time_index;
     start[1] = lat_start;
     start[2] = lon_start;

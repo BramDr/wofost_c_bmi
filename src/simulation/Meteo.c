@@ -1,13 +1,9 @@
+#include "math_utils.h"
 #include "simulation.h"
 #include "time_utils.h"
 #include <math.h>
 #include <netcdf.h>
 #include <string.h>
-
-/* set decimals */
-#define roundz(x, d) ((floor(((x) * pow(10, d)) + .5)) / pow(10, d))
-#define roundz1(x) ((floor(((x) * 10) + .5)) / 10)
-#define roundz2(x) ((floor(((x) * 100) + .5)) / 100)
 
 static void InitializeMeteoData(const size_t size, float **data) {
 
@@ -33,139 +29,145 @@ static void StartMeteo(const Config *config, const double west,
     DeriveNetCDFMetaTime(start, end, meta);
     meta->var_unit = var_unit;
   }
-}
 
-static void ReadMeteo(const size_t size, const NetCDFMeta metas[WEATHER_NTYPES],
-                      const time_t current, float data[], DomUnit grid[]) {
+  static void ReadMeteo(const size_t size,
+                        const NetCDFMeta metas[WEATHER_NTYPES],
+                        const time_t current, float data[], DomUnit grid[]) {
 
-  for (size_t i = 0; i < WEATHER_NTYPES; i++) {
-    const NetCDFMeta *meta = &metas[i];
-    size_t var_unit = meta->var_unit;
+    for (size_t i = 0; i < WEATHER_NTYPES; i++) {
+      const NetCDFMeta *meta = &metas[i];
+      size_t var_unit = meta->var_unit;
 
-    size_t time_start = (size_t)((current - meta->time[0]) / (time_t)TIME_STEP);
-    ReadNetCDFMetaFloat(meta, NAN, data, time_start);
+      size_t time_start =
+          (size_t)((current - meta->time[0]) / (time_t)TIME_STEP);
+      ReadNetCDFMetaFloat(meta, NAN, data, time_start);
 
-    for (size_t j = 0; j < size; j++) {
-      DomUnit *unit = &grid[j];
-      Weather *met = &unit->met;
-      float element = data[j];
+      for (size_t j = 0; j < size; j++) {
+        DomUnit *unit = &grid[j];
+        Weather *met = &unit->met;
+        float element = data[j];
 
-      switch (i) {
-      case WEATHER_TMIN:
-        switch (var_unit) {
-        case UNIT_CELSIUS:
-          met->Tmin = roundz1(element);
+        switch (i) {
+        case WEATHER_TMIN:
+          switch (var_unit) {
+          case UNIT_CELSIUS:
+            met->Tmin = roundz1(element);
+            break;
+          case UNIT_KELVIN:
+            met->Tmin = roundz1(element - 273.15);
+            break;
+          default:
+            ERR("Unknown weather variable unit %zu for TMIN.", var_unit);
+          }
+          shift_down_float(met->Tmin_history, TMIN_HISTORY_LENGTH);
+          met->Tmin_history[TMIN_HISTORY_LENGTH - 1] = met->Tmin;
           break;
-        case UNIT_KELVIN:
-          met->Tmin = roundz1(element - 273.15);
+        case WEATHER_TMAX:
+          switch (var_unit) {
+          case UNIT_CELSIUS:
+            met->Tmax = roundz1(element);
+            break;
+          case UNIT_KELVIN:
+            met->Tmax = roundz1(element - 273.15);
+            break;
+          default:
+            ERR("Unknown weather variable unit %zu for TMAX.", var_unit);
+          }
+          break;
+        case WEATHER_RADIATION:
+          switch (var_unit) {
+          case UNIT_J_PER_M2_PER_DAY:
+            met->Radiation = roundz1(element);
+            break;
+          case UNIT_J_PER_M2_PER_S:
+          case UNIT_W_PER_M2:
+            met->Radiation = roundz1(86400 * element);
+            break;
+          default:
+            ERR("Unknown weather variable unit %zu for RADIATION.", var_unit);
+          }
+          break;
+        case WEATHER_RAIN:
+          switch (var_unit) {
+          case UNIT_CM_PER_DAY:
+            met->Rain = roundz2(element);
+            break;
+          case UNIT_MM_PER_S:
+          case UNIT_KG_PER_M2_PER_S:
+            met->Rain = roundz2(0.1 * 86400 * element);
+            break;
+          case UNIT_M_PER_DAY:
+            met->Rain = roundz2(100 * element);
+            break;
+          default:
+            ERR("Unknown weather variable unit %zu for RAIN.", var_unit);
+          }
+          break;
+        case WEATHER_WINDSPEED:
+          switch (var_unit) {
+          case UNIT_M_PER_S:
+            met->Windspeed = roundz1(element);
+            break;
+          default:
+            ERR("Unknown weather variable unit %zu for WINDSPEED.", var_unit);
+          }
+          break;
+        case WEATHER_VAPOUR:
+          switch (var_unit) {
+          case UNIT_HPA:
+            met->Vapour = roundz1(element);
+            break;
+          case UNIT_PA:
+            met->Vapour = roundz1(0.01 * element);
+            break;
+          case UNIT_KPA:
+            met->Vapour = roundz1(10 * element);
+            break;
+          default:
+            ERR("Unknown weather variable unit %zu for VAPOUR.", var_unit);
+          }
           break;
         default:
-          ERR("Unknown weather variable unit %zu for TMIN.", var_unit);
+          ERR("Unknown weather variable type %zu.", i);
         }
-        break;
-      case WEATHER_TMAX:
-        switch (var_unit) {
-        case UNIT_CELSIUS:
-          met->Tmax = roundz1(element);
-          break;
-        case UNIT_KELVIN:
-          met->Tmax = roundz1(element - 273.15);
-          break;
-        default:
-          ERR("Unknown weather variable unit %zu for TMAX.", var_unit);
-        }
-        break;
-      case WEATHER_RADIATION:
-        switch (var_unit) {
-        case UNIT_J_PER_M2_PER_DAY:
-          met->Radiation = roundz1(element);
-          break;
-        case UNIT_J_PER_M2_PER_S:
-        case UNIT_W_PER_M2:
-          met->Radiation = roundz1(86400 * element);
-          break;
-        default:
-          ERR("Unknown weather variable unit %zu for RADIATION.", var_unit);
-        }
-        break;
-      case WEATHER_RAIN:
-        switch (var_unit) {
-        case UNIT_CM_PER_DAY:
-          met->Rain = roundz2(element);
-          break;
-        case UNIT_MM_PER_S:
-        case UNIT_KG_PER_M2_PER_S:
-          met->Rain = roundz2(0.1 * 86400 * element);
-          break;
-        case UNIT_M_PER_DAY:
-          met->Rain = roundz2(100 * element);
-          break;
-        default:
-          ERR("Unknown weather variable unit %zu for RAIN.", var_unit);
-        }
-        break;
-      case WEATHER_WINDSPEED:
-        switch (var_unit) {
-        case UNIT_M_PER_S:
-          met->Windspeed = roundz1(element);
-          break;
-        default:
-          ERR("Unknown weather variable unit %zu for WINDSPEED.", var_unit);
-        }
-        break;
-      case WEATHER_VAPOUR:
-        switch (var_unit) {
-        case UNIT_HPA:
-          met->Vapour = roundz1(element);
-          break;
-        case UNIT_KPA:
-          met->Vapour = roundz1(10 * element);
-          break;
-        default:
-          ERR("Unknown weather variable unit %zu for VAPOUR.", var_unit);
-        }
-        break;
-      default:
-        ERR("Unknown weather variable type %zu.", i);
       }
     }
   }
-}
 
-static void StopMeteo(NetCDFMeta metas[WEATHER_NTYPES]) {
+  static void StopMeteo(NetCDFMeta metas[WEATHER_NTYPES]) {
 
-  for (int i = 0; i < WEATHER_NTYPES; i++) {
-    NetCDFMeta *meta = &metas[i];
-    FreeNetCDFMeta(meta);
+    for (int i = 0; i < WEATHER_NTYPES; i++) {
+      NetCDFMeta *meta = &metas[i];
+      FreeNetCDFMeta(meta);
+    }
   }
-}
 
-static void FinalizeMeteoData(float *data) {
+  static void FinalizeMeteoData(float *data) {
 
-  free(data);
-  data = NULL;
-}
+    free(data);
+    data = NULL;
+  }
 
-void InitializeMeteo(void) {
-  DBG("InitializeMeteo");
+  void InitializeMeteo(void) {
+    DBG("InitializeMeteo");
 
-  InitializeMeteoData(DomainSize, &WeatherData);
+    InitializeMeteoData(DomainSize, &WeatherData);
 
-  time_t StartTime = timegm_portable(&Start);
-  time_t EndTime = timegm_portable(&End);
-  StartMeteo(Configuration, West, East, South, North, StartTime, EndTime,
-             DomainShape, WeatherMetas);
-}
+    time_t StartTime = timegm_portable(&Start);
+    time_t EndTime = timegm_portable(&End);
+    StartMeteo(Configuration, West, East, South, North, StartTime, EndTime,
+               DomainShape, WeatherMetas);
+  }
 
-void UpdateMeteo(void) {
-  DBG("UpdateMeteo");
+  void UpdateMeteo(void) {
+    DBG("UpdateMeteo");
 
-  ReadMeteo(DomainSize, WeatherMetas, CurrentTime, WeatherData, DomGrid);
-}
+    ReadMeteo(DomainSize, WeatherMetas, CurrentTime, WeatherData, DomGrid);
+  }
 
-void FinalizeMeteo(void) {
-  DBG("FinalizeMeteo");
+  void FinalizeMeteo(void) {
+    DBG("FinalizeMeteo");
 
-  StopMeteo(WeatherMetas);
-  FinalizeMeteoData(WeatherData);
-}
+    StopMeteo(WeatherMetas);
+    FinalizeMeteoData(WeatherData);
+  }

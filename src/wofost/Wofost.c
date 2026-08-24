@@ -9,9 +9,6 @@ void UpdateWofost(void) {
   Temp = 0.5 * (Meteo->Tmax + Meteo->Tmin);
   DayTemp = 0.5 * (Meteo->Tmax + Temp);
 
-  shift_down_float(Meteo->Tmin_history, TMIN_HISTORY_LENGTH);
-  Meteo->Tmin_history[TMIN_HISTORY_LENGTH - 1] = Meteo->Tmin;
-
   /* Determine if the sowing already has occurred */
   IfSowing(SUnit->start);
 
