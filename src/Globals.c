@@ -21,6 +21,7 @@ double Resolution;
 double West, East, North, South;
 
 size_t CropSize;
+char **CropNames;
 size_t *ActiveSize;
 size_t **ActiveIndex;
 
@@ -56,6 +57,5 @@ DomUnit *DUnit;
 SimUnit *SUnit;
 bool Standalone;
 bool IgnoreNutrientStress;
-bool IgnoreSoilMoisture;
 float Temp;
 float DayTemp;

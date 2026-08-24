@@ -35,7 +35,7 @@ void InitializeWatBal(void) {
   if (Crop->prm.Airducts)
     Site->MaxInitSoilM = WatBal->ct.MoistureSAT;
 
-  if (!IgnoreSoilMoisture) {
+  if (!Standalone) {
     WatBal->st.Moisture = limit(WatBal->ct.MoistureWP, Site->MaxInitSoilM,
                                 WatBal->ct.MoistureWP + Site->InitSoilMoisture /
                                                             Crop->st.RootDepth);
@@ -221,10 +221,8 @@ void IntegrationWatBal(void) {
     WatBal->st.RootZoneMoisture += WaterRootExt;
   }
 
-  if (!IgnoreSoilMoisture) {
-    /* Mean soil moisture content in rooted zone */
-    WatBal->st.Moisture = WatBal->st.RootZoneMoisture / Crop->st.RootDepth;
-  }
+  /* Mean soil moisture content in rooted zone */
+  WatBal->st.Moisture = WatBal->st.RootZoneMoisture / Crop->st.RootDepth;
 
   /* Store the infiltration rate of the previous day */
   WatBal->InfPreviousDay = WatBal->rt.Infiltration;

@@ -21,6 +21,7 @@ extern double West, East, North, South;
 
 /** Mask Variables  **/
 extern size_t CropSize;
+extern char **CropNames;
 extern size_t *ActiveSize;
 extern size_t **ActiveIndex;
 

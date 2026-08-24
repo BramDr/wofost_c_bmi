@@ -6,6 +6,34 @@
 #include <stdlib.h>
 #include <string.h>
 
+const char *WEATHER_VARIABLES[WEATHER_NTYPES] = {
+    "TMIN", "TMAX", "RADIATION", "RAIN", "WINDSPEED", "VAPOUR"};
+const char *VARIABLE_UNITS[UNIT_NTYPES] = {"KELVIN",
+                                           "CELSIUS",
+                                           "J_PER_M2_PER_DAY",
+                                           "J_PER_M2_PER_S",
+                                           "W_PER_M2",
+                                           "MM_PER_S",
+                                           "KG_PER_M2_PER_S",
+                                           "CM_PER_DAY",
+                                           "M_PER_DAY",
+                                           "M_PER_S",
+                                           "KPA",
+                                           "HPA",
+                                           "PA"};
+const char *DOMAIN_VARIABLES[DOMAIN_NTYPES] = {"MASK", "PLANT_DATE", "TSUM1",
+                                               "TSUM2"};
+const char *OUTPUT_VARIABLES[OUTPUT_NTYPES] = {
+    "GROWTH_DAY",        "DEVELOPMENT",       "ROOT_BIOMASS",
+    "LEAVES_BIOMASS",    "STEMS_BIOMASS",     "STORAGE_BIOMASS",
+    "ROOT_DEPTH",        "LEAF_AREA_INDEX",   "STRESS",
+    "WATER_STRESS",      "HEAT_STRESS",       "NUTRIENT_STRESS",
+    "ROOT_DEAD",         "LEAVES_DEAD",       "STEMS_DEAD",
+    "ROOT_N_CONTENT",    "LEAVES_N_CONTENT",  "STEMS_N_CONTENT",
+    "STORAGE_N_CONTENT", "ROOT_P_CONTENT",    "LEAVES_P_CONTENT",
+    "STEMS_P_CONTENT",   "STORAGE_P_CONTENT", "ROOT_K_CONTENT",
+    "LEAVES_K_CONTENT",  "STEMS_K_CONTENT",   "STORAGE_K_CONTENT"};
+
 static bool skip_comment(char *trimmed) {
   return (trimmed[0] == '#' || trimmed[0] == '*' || trimmed[0] == ';' ||
           trimmed[0] == '\0');
@@ -25,7 +53,6 @@ static void ReadGeneralConfiguration(FILE *fp, Config *config) {
   config->End.tm_mday = -1;
   config->standalone = false;
   config->ignore_nutrient_stress = false;
-  config->ignore_soil_moisture = false;
 
   // Read
   while (fgets(line, sizeof(line), fp)) {
@@ -74,19 +101,6 @@ static void ReadGeneralConfiguration(FILE *fp, Config *config) {
         config->ignore_nutrient_stress = false;
       } else {
         ERR("Invalid %s line in config file: %s", IGNORE_NUTRIENT_STRESS_OPTION,
-            trimmed);
-      }
-    } else if (strcmp(option, IGNORE_SOIL_MOISTURE_OPTION) == 0) {
-      char ignore_type[MAX_STRING];
-      if (sscanf(trimmed + used, "%s", ignore_type) != 1)
-        ERR("Invalid %s line in config file: %s", IGNORE_SOIL_MOISTURE_OPTION,
-            trimmed);
-      if (strcmp(ignore_type, "TRUE") == 0) {
-        config->ignore_soil_moisture = true;
-      } else if (strcmp(ignore_type, "FALSE") == 0) {
-        config->ignore_soil_moisture = false;
-      } else {
-        ERR("Invalid %s line in config file: %s", IGNORE_SOIL_MOISTURE_OPTION,
             trimmed);
       }
     }
@@ -417,19 +431,19 @@ static void ReadCropsConfiguration(FILE *fp, Config *config) {
     if (strlen(crop_config->site_file) == 0)
       ERR("Site file must be specified in the crop configuration for crop %s.",
           crop_config->crop_name);
-    for (int i = 0; i < DOMAIN_NTYPES; i++) {
-      if (i > DOMAIN_PLANT_DATE) {
+    for (int j = 0; j < DOMAIN_NTYPES; j++) {
+      if (j > DOMAIN_PLANT_DATE) {
         continue;
       }
-      if (strlen(crop_config->domain_files[i].file_path) == 0) {
+      if (strlen(crop_config->domain_files[j].file_path) == 0) {
         ERR("Domain file for type %s is not specified in the crop "
             "configuration for crop %s.\n",
-            DOMAIN_VARIABLES[i], crop_config->crop_name);
+            DOMAIN_VARIABLES[j], crop_config->crop_name);
       }
     }
     bool has_output_type = false;
-    for (int i = 0; i < OUTPUT_NTYPES; i++) {
-      if (crop_config->output_types[i]) {
+    for (int j = 0; j < OUTPUT_NTYPES; j++) {
+      if (crop_config->output_types[j]) {
         has_output_type = true;
         break;
       }

@@ -11,7 +11,6 @@
 #define OUTPUT_DIRECTORY_OPTION "OUTPUT_DIRECTORY"
 #define WEATHER_FILE_OPTION "WEATHER_FILE"
 #define IGNORE_NUTRIENT_STRESS_OPTION "IGNORE_NUTRIENT_STRESS"
-#define IGNORE_SOIL_MOISTURE_OPTION "IGNORE_SOIL_MOISTURE"
 
 #define CROP_NAME_OPTION "CROP_NAME"
 #define PLANT_DATE_OPTION "PLANT_DATE"
@@ -51,6 +50,7 @@ enum {
   // Pressure
   UNIT_KPA,
   UNIT_HPA,
+  UNIT_PA,
   UNIT_NTYPES
 };
 
@@ -93,26 +93,6 @@ enum {
   OUTPUT_NTYPES,
 };
 
-static const char WEATHER_VARIABLES[WEATHER_NTYPES][MAX_STRING] = {
-    "TMIN", "TMAX", "RADIATION", "RAIN", "WINDSPEED", "VAPOUR"};
-static const char VARIABLE_UNITS[UNIT_NTYPES][MAX_STRING] = {
-    "KELVIN",          "CELSIUS",    "J_PER_M2_PER_DAY",
-    "J_PER_M2_PER_S",  "W_PER_M2",   "MM_PER_S",
-    "KG_PER_M2_PER_S", "CM_PER_DAY", "M_PER_DAY",
-    "M_PER_S",         "KPA",        "HPA"};
-static const char DOMAIN_VARIABLES[DOMAIN_NTYPES][MAX_STRING] = {
-    "MASK", "PLANT_DATE", "TSUM1", "TSUM2"};
-static const char OUTPUT_VARIABLES[OUTPUT_NTYPES][MAX_STRING] = {
-    "GROWTH_DAY",        "DEVELOPMENT",       "ROOT_BIOMASS",
-    "LEAVES_BIOMASS",    "STEMS_BIOMASS",     "STORAGE_BIOMASS",
-    "ROOT_DEPTH",        "LEAF_AREA_INDEX",   "STRESS",
-    "WATER_STRESS",      "HEAT_STRESS",       "NUTRIENT_STRESS",
-    "ROOT_DEAD",         "LEAVES_DEAD",       "STEMS_DEAD",
-    "ROOT_N_CONTENT",    "LEAVES_N_CONTENT",  "STEMS_N_CONTENT",
-    "STORAGE_N_CONTENT", "ROOT_P_CONTENT",    "LEAVES_P_CONTENT",
-    "STEMS_P_CONTENT",   "STORAGE_P_CONTENT", "ROOT_K_CONTENT",
-    "LEAVES_K_CONTENT",  "STEMS_K_CONTENT",   "STORAGE_K_CONTENT"};
-
 typedef struct NETCDFCONFIG {
   char file_path[MAX_STRING];
   char time_name[MAX_STRING];
@@ -139,7 +119,6 @@ typedef struct CONFIG {
   char output_directory[MAX_STRING];
   bool standalone;
   bool ignore_nutrient_stress;
-  bool ignore_soil_moisture;
   NetCDFConfig area_file;
   NetCDFConfig weather_files[WEATHER_NTYPES];
   size_t weather_units[WEATHER_NTYPES];

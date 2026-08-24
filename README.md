@@ -6,7 +6,7 @@ Added weather units support to specify and automatically convert values.
 ## WOFOST changes
 
 ### Options
-Added IGNORE_NUTRIENT_STRESS and IGNORE_SOIL_MOISTURE options (instead of commenting out code).
+Added IGNORE_NUTRIENT_STRESS options (instead of commenting out code).
 
 
 ## WOFOST bug-fixes

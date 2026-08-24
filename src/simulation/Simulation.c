@@ -242,6 +242,16 @@ void InitializeSimulationUnits(void) {
 
   CropSize = Configuration->CropSize;
 
+  CropNames = malloc(CropSize * sizeof(*CropNames));
+  if (CropNames == NULL)
+    ERR("Could not allocate memory for crop_names.");
+  for (size_t i = 0; i < CropSize; i++) {
+    CropConfig *crop_config = &Configuration->crop_configurations[i];
+    CropNames[i] = strdup(crop_config->crop_name);
+    if (CropNames[i] == NULL)
+      ERR("Could not allocate memory for crop_names[%zu].", i);
+  }
+
   InitializeSimulationMetas(Configuration, DomainSize, West, East, South, North,
                             DomainShape, CropSize, &ActiveSize, &ActiveIndex);
 
@@ -263,13 +273,17 @@ void FinalizeSimulationUnits(void) {
     }
     free(ActiveIndex[i]);
     free(SimGrid[i]);
+    free(CropNames[i]);
     ActiveIndex[i] = NULL;
     SimGrid[i] = NULL;
+    CropNames[i] = NULL;
   }
   free(ActiveIndex);
   free(SimGrid);
   free(ActiveSize);
+  free(CropNames);
   ActiveIndex = NULL;
   SimGrid = NULL;
   ActiveSize = NULL;
+  CropNames = NULL;
 }
