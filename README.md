@@ -1,12 +1,30 @@
+# wofost_c_bmi
+The WOFOST crop model (c-version; https://github.com/isupit/wofost_c) with Basic Model Interface (BMI; https://github.com/csdms/bmi) implementation.
+
 ## Framework changes
+
+### Reorganization
+c and header files are now organized into their own directories (`src/` and `include/`) and subdirectories. Code related to the WOFOST crop model (`wofost/` subdirectory) is now seperated from code related to the simulation setup (`simulation/` subdirectory) and code related to the BMI interface (`bmi/` subdirectory).
+
+### Builds
+wofost can now be build through
+1) a `makefile` (for a bmi-compliant standalone executable)
+2) a `CMakeLists.txt` file (for a bmi-compliant standalone executable)
+3) a `babel_wofost.toml` (for a bmi-compliant python module)
+
+### Simulation
+Each simulation can now handle simulating multiple crops at the same time and only within each crops mask (i.e., the crops active grid cells). Weather information is still read for the entire grid, but this information is shared between crops that are active within the same grid cell.
+
+### BMI
+All relevant BMI methods have been implemented. Input/output variable exchange for specific crops is done by prefixing the crop name to the variable name.
+
+## WOFOST changes
 
 ### Units
 Added weather units support to specify and automatically convert values.
 
-## WOFOST changes
-
 ### Options
-Added IGNORE_NUTRIENT_STRESS options (instead of commenting out code).
+Added IGNORE_NUTRIENT_STRESS options.
 
 
 ## WOFOST bug-fixes
