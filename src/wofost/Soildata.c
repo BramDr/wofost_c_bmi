@@ -35,7 +35,11 @@ void GetSoilData(Soil *SOIL, char *soilfile) {
       if (!strcmp(word, SoilParam[i])) {
         while ((c = fgetc(fq)) != '=')
           ;
-        fscanf(fq, "%f", &Variable[i]);
+        if (fscanf(fq, "%f", &Variable[i]) != 1) {
+          fprintf(stderr, "Cannot read value of %s in file %s.\n",
+                  SoilParam[i], soilfile);
+          exit(0);
+        }
         count++;
         break;
       }

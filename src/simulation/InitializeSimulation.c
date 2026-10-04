@@ -4,7 +4,9 @@
 void InitializeSimulation(const char *config_file) {
   DBG("InitializeSimulation");
 
-  Configuration = malloc(sizeof(Config));
+  Configuration = calloc(1, sizeof(Config));
+  if (Configuration == NULL)
+    ERR("Could not allocate memory for configuration.");
 
   ReadConfiguration(config_file, Configuration);
   Start = Configuration->Start;

@@ -35,7 +35,11 @@ void GetManagement(Management *MNG, char *management) {
     if (!strcmp(word, ManageParam[i])) {
       while ((c = fgetc(fq)) != '=')
         ;
-      fscanf(fq, "%f", &Variable[i]);
+      if (fscanf(fq, "%f", &Variable[i]) != 1) {
+        fprintf(stderr, "Cannot read value of %s in file %s.\n",
+                ManageParam[i], management);
+        exit(0);
+      }
       i++;
     }
   }

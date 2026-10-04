@@ -107,7 +107,11 @@ void GetCropData(Plant *CROP, char *cropfile) {
       if (!strcmp(word, CropParam[i])) {
         while ((c = fgetc(fq)) != '=')
           ;
-        fscanf(fq, "%f", &Variable[i]);
+        if (fscanf(fq, "%f", &Variable[i]) != 1) {
+          fprintf(stderr, "Cannot read value of %s in file %s.\n",
+                  CropParam[i], cropfile);
+          exit(0);
+        }
         count++;
         break;
       }

@@ -292,10 +292,36 @@ static void FlipDataFloat(float data[], size_t lat_count, size_t lon_count,
   }
 }
 
+// Reads a single-valued attribute (_FillValue, missing_value) converted to the
+// type that is read, or returns default_value when the attribute is absent,
+// holds several values or does not fit the type. nc_inq_var_fill() is not
+// used: for netCDF-4 variables in no-fill mode (_NoFill = "true") it returns
+// NC_NOERR without writing the fill value.
+static float GetAttributeFloat(const NetCDFMeta *meta, const char *name,
+                               const float default_value) {
+  size_t len;
+  float value;
+  if (nc_inq_attlen(meta->ncid, meta->varid, name, &len) == NC_NOERR &&
+      len == 1 &&
+      nc_get_att_float(meta->ncid, meta->varid, name, &value) == NC_NOERR)
+    return value;
+  return default_value;
+}
+
+static int GetAttributeInt(const NetCDFMeta *meta, const char *name,
+                           const int default_value) {
+  size_t len;
+  int value;
+  if (nc_inq_attlen(meta->ncid, meta->varid, name, &len) == NC_NOERR &&
+      len == 1 &&
+      nc_get_att_int(meta->ncid, meta->varid, name, &value) == NC_NOERR)
+    return value;
+  return default_value;
+}
+
 void ReadNetCDFMetaFloat(const NetCDFMeta *meta, const float fill_value,
                          float data[], size_t time_index) {
   int status;
-  float var_fill;
   size_t start[NR_DOMAIN_DIMENSIONS + 1];
   size_t count[NR_DOMAIN_DIMENSIONS + 1];
 
@@ -332,13 +358,10 @@ void ReadNetCDFMetaFloat(const NetCDFMeta *meta, const float fill_value,
     FlipDataFloat(data, meta->lat_count, meta->lon_count, meta->lat_flipped,
                   meta->lon_flipped);
 
-  if ((status = nc_inq_var_fill(meta->ncid, meta->varid, NULL, &var_fill)) !=
-      NC_NOERR)
-    ERR("Cannot query fill value for variable %s: %s.", meta->path,
-        nc_strerror(status));
-
+  float var_fill = GetAttributeFloat(meta, NC_FillValue, NC_FILL_FLOAT);
+  float var_missing = GetAttributeFloat(meta, "missing_value", var_fill);
   for (size_t i = 0; i < meta->lat_count * meta->lon_count; i++) {
-    if (data[i] == var_fill || isnan(data[i]))
+    if (data[i] == var_fill || data[i] == var_missing || isnan(data[i]))
       data[i] = fill_value;
   }
 }
@@ -372,7 +395,6 @@ static void FlipDataInt(int data[], size_t lat_count, size_t lon_count,
 void ReadNetCDFMetaInt(const NetCDFMeta *meta, const int fill_value, int data[],
                        size_t time_index) {
   int status;
-  int var_fill;
   size_t start[NR_DOMAIN_DIMENSIONS + 1];
   size_t count[NR_DOMAIN_DIMENSIONS + 1];
 
@@ -406,13 +428,10 @@ void ReadNetCDFMetaInt(const NetCDFMeta *meta, const int fill_value, int data[],
     FlipDataInt(data, meta->lat_count, meta->lon_count, meta->lat_flipped,
                 meta->lon_flipped);
 
-  if ((status = nc_inq_var_fill(meta->ncid, meta->varid, NULL, &var_fill)) !=
-      NC_NOERR)
-    ERR("Cannot query fill value for variable %s: %s.", meta->path,
-        nc_strerror(status));
-
+  int var_fill = GetAttributeInt(meta, NC_FillValue, NC_FILL_INT);
+  int var_missing = GetAttributeInt(meta, "missing_value", var_fill);
   for (size_t i = 0; i < meta->lat_count * meta->lon_count; i++) {
-    if (data[i] == var_fill)
+    if (data[i] == var_fill || data[i] == var_missing)
       data[i] = fill_value;
   }
 }

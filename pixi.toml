@@ -1,0 +1,61 @@
+[workspace]
+name = "wofost_c_bmi"
+channels = ["conda-forge"]
+platforms = ["linux-64"] 
+
+[dependencies]
+# Build tools
+gcc_linux-64 = "*"
+make = "*"
+cmake = "*"
+# Python tools
+python = "=3.14"
+pip = "*"
+babelizer = "*"
+# > babelizer imports pkg_resources, which setuptools removed in 81.0.0.
+setuptools = "<81"
+# C dependencies
+bmi-c = "*"
+libnetcdf = "*"
+
+[activation.env]
+CMAKE_INSTALL_PREFIX = "$CONDA_PREFIX"
+
+[tasks.configure-c]
+description = "(Re)create build/ and configure CMake in Release mode; skipped when CMakeLists.txt has not changed"
+cmd = "rm -rf build && cmake -S . -B build -DCMAKE_BUILD_TYPE=Release"
+inputs = ["CMakeLists.txt"]
+outputs = ["build/CMakeCache.txt"]
+
+[tasks.build-c]
+description = "Compile the shared library (libbmiwofost.so) and the executable (wofost)"
+cmd = "cmake --build build"
+depends-on = ["configure-c"]
+
+[tasks.install-c]
+description = "Install libbmiwofost.so, bmi_wofost.h and wofost into the pixi environment"
+cmd = "cmake --install build"
+depends-on = ["build-c"]
+
+[tasks.test-install-c]
+description = "Check that the installed C library, header and executable are present"
+cmd = """
+(test -f $CONDA_PREFIX/lib/libbmiwofost.so || (echo "ERROR: libbmiwofost.so not found in $CONDA_PREFIX/lib" && exit 1)) &&
+(test -f $CONDA_PREFIX/include/bmi_wofost.h || (echo "ERROR: bmi_wofost.h not found in $CONDA_PREFIX/include" && exit 1)) &&
+(test -f $CONDA_PREFIX/bin/wofost || echo "WARNING: wofost executable not found in $CONDA_PREFIX/bin")
+"""
+
+[tasks.configure-py]
+description = "Generate the Python module (pymt_wofost/) from babel.toml with babelizer; skipped when babel.toml has not changed"
+cmd = "rm -rf pymt_wofost && babelize init babel.toml"
+inputs = ["babel.toml"]
+outputs = ["pymt_wofost/setup.py"]
+
+[tasks.install-py]
+description = "Build and install pymt_wofost into the pixi environment"
+cmd = "pip install ./pymt_wofost"
+depends-on = ["configure-py"]
+
+[tasks.test-install-py]
+description = "Check that pymt_wofost can be imported"
+cmd = "python -c 'import pymt_wofost'"

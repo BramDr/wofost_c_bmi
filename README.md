@@ -1,16 +1,32 @@
 # wofost_c_bmi
 The WOFOST crop model (c-version; https://github.com/isupit/wofost_c) with Basic Model Interface (BMI; https://github.com/csdms/bmi) implementation.
 
+## Getting started
+
+### Requirements
+Only [pixi](https://pixi.sh) is required. It installs the compiler, CMake, the C dependencies (netCDF, bmi-c) and the Python tools (Python 3.14, babelizer) from conda-forge into a project-local environment (`.pixi/envs/default`), and runs the build steps. No system packages or conda activation are needed. `pixi.lock` pins the exact package versions; `pixi update` refreshes them.
+
+### Build and install
+```
+pixi run install-c
+pixi run install-py
+pixi run test-install-c
+pixi run test-install-py
+```
+builds the C library and executable, installs them into the pixi environment, generates and installs the Python module, and checks that it can be imported. The individual steps are pixi tasks (`pixi task list`) defined in `pixi.toml`.
+
 ## Framework changes
 
 ### Reorganization
 c and header files are now organized into their own directories (`src/` and `include/`) and subdirectories. Code related to the WOFOST crop model (`wofost/` subdirectory) is now seperated from code related to the simulation setup (`simulation/` subdirectory) and code related to the BMI interface (`bmi/` subdirectory).
 
 ### Builds
-wofost can now be build through
-1) a `makefile` (for a bmi-compliant standalone executable)
-2) a `CMakeLists.txt` file (for a bmi-compliant standalone executable)
-3) a `babel_wofost.toml` (for a bmi-compliant python module)
+The original `makefile` has been replaced by CMake (`CMakeLists.txt`), which is the only supported build system. It produces
+1) a bmi-compliant shared library (`libbmiwofost.so`)
+2) a bmi-compliant standalone executable (`wofost`)
+
+The shared library is wrapped into a bmi-compliant python module (`pymt_wofost`) with babelizer through `babel.toml`.
+Dependencies and build steps are managed with pixi (`pixi.toml`); see [Getting started](#getting-started).
 
 ### Simulation
 Each simulation can now handle simulating multiple crops at the same time and only within each crops mask (i.e., the crops active grid cells). Weather information is still read for the entire grid, but this information is shared between crops that are active within the same grid cell.

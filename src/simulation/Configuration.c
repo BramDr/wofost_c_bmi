@@ -44,7 +44,10 @@ static void ReadGeneralConfiguration(FILE *fp, Config *config) {
   char line[MAX_STRING], option[MAX_STRING];
   int used;
 
-  // Clear
+  // Clear (zero all struct tm fields first: only the date is read from the
+  // config file, but timegm_portable() also reads time-of-day and tm_isdst)
+  config->Start = (struct tm){0};
+  config->End = (struct tm){0};
   config->Start.tm_year = -1;
   config->Start.tm_mon = -1;
   config->Start.tm_mday = -1;

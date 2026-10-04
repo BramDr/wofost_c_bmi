@@ -9,24 +9,18 @@ entry_point = "register_bmi_wofost"
 
 # Describe compiler options need to build the library being wrapped.
 [build]
-undef_macros = []
-define_macros = []
-libraries = ["netcdf", "m"]
-library_dirs = ["$CONDA_PREFIX/lib"]
-include_dirs = ["$CONDA_PREFIX/include"]
-extra_compile_args = ["-std=gnu11"]
 
 # Describe the newly wrapped package.
 [package]
 name = "pymt_wofost"
-requirements = ["libnetcdf"]
+requirements = ["bmi-c", "libnetcdf"]
 
 [info]
 github_username = "BramDr"
 package_author = "Bram Droppers"
 package_author_email = "bram.droppers@gmail.com"
 package_license = "GNU General Public License v3"
-summary = "PyMT component for the C WOFOST model"
+summary = "PyMT component for the C WOFOST model with a Basic Model Interface implementation"
 
 [ci]
 python_version = ["3.14"]
